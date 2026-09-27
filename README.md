@@ -17,30 +17,33 @@ Student(s): <Ung Muy Seang> · <Sang Visal> .  Mentor: Mr. Chau Magn
 Scope Memo: <Drive link>   Report: <Drive: https://drive.google.com/drive/folders/15Qkef1EwjaHntbcCRpOEuh6NLbMB6bNo >   Trello board: <https://trello.com/b/VhMQZHpy/02-coffee-shop-pos>
 
 ## Stack (frozen at S1 — changes need a written agreement)
-- Backend: <e.g. Laravel 11 / Django 5 / FastAPI> · Database: <MySQL 8 / PostgreSQL / Room>
-- Frontend / client: <React + Tailwind / Android Kotlin / ...>
-- Tools: Git + GitHub, Trello, Postman, <draw.io>, <Android Studio>
+- Backend: <Django 5 / Django REST Framework> · Database: <MySQL 8>
+- Frontend / client: <Android Kotlin>
+- Tools: Git + GitHub, Trello, Postman, <figma>, <Android Studio>, <Visual Studio Code>
 
 ## Run from a clean clone (this section is tested by the mentor before every gate)
 ```bash
-git clone <repo-url>
-cd <folder>
+git clone https://github.com/muyseang/monicoffee-shop-pos.git
+cd monicoffee-shop-pos/backend
 # 1. dependencies
-<composer install / pip install -r requirements.txt / ./gradlew build>
+python3 -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 # 2. environment
 cp .env.example .env        # then fill DB credentials — never commit .env
 # 3. database
-<php artisan migrate --seed / python manage.py migrate && python manage.py seed_demo>
+mysql -u root -p -e "CREATE DATABASE coffee_pos CHARACTER SET utf8mb4;"
+python manage.py migrate && python manage.py seed_demo
 # 4. run
-<php artisan serve / python manage.py runserver / install app-debug.apk>
+python manage.py runserver
 ```
-Expected result after step 4: <e.g. "http://localhost:8000 shows the login page">.
+Expected result after step 4: `http://127.0.0.1:8000/admin/` shows the Django admin login page.
 
 ## Demo accounts (seeded)
 | Role | Login | Password |
 |---|---|---|
-| <merchant / admin> | demo.admin@example.com | Demo1234! |
-| <customer / staff> | demo.user@example.com | Demo1234! |
+| super_admin | admin | Admin@12345 |
+| staff | staff1 | Staff@12345 |
+| client | client1 | Client@12345 |
 
 ## MVP status (mirrors the Trello board — every ✅ must have a commit/PR link on its card)
 | # | MVP item (from Scope Memo) | Owner | Status | Evidence (commit / PR) |
@@ -52,8 +55,8 @@ Expected result after step 4: <e.g. "http://localhost:8000 shows the login page"
 - <item> — cut at S1 because <one reason>
 
 ## Module ownership (groups only)
-- <name> owns <module> — individually assessed on it
-- <name> owns <module>
+- <Ung Muy Seang> owns <Backend-Django> — individually assessed on it
+- <Sang Visal> owns <Android>
 
 ## Boundaries
 - <e.g. Simulation only. No real money, no real bank identifiers, no real customer data.>
