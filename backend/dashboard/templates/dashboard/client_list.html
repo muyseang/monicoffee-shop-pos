@@ -1,0 +1,112 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Clients — Moni Coffee{% endblock %}
+{% block nav_clients_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Clients</h1>
+      <p>Customer accounts registered in-app or in-store</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form class="toolbar" method="get">
+    <div class="field">
+      <label for="q">Search</label>
+      <input type="text" id="q" name="q" value="{{ query }}" placeholder="Search name or phone">
+    </div>
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" name="status" onchange="this.form.submit()">
+        <option value="" {% if not status %}selected{% endif %}>All statuses</option>
+        <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <a class="btn btn-primary" href="{% url 'dashboard:client-create' %}">+ Add Client</a>
+  </form>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Address</th>
+          <th>Orders</th>
+          <th>Joined</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+          <tr>
+            <td>
+              <div class="cell-name">{{ client.first_name|default:"—" }}</div>
+              <div class="cell-sub">{{ client.phone }}</div>
+            </td>
+            <td>{{ client.address|default:"—" }}</td>
+            <td>—</td>
+            <td>{{ client.date_joined|date:"d M Y" }}</td>
+            <td>
+              {% if client.is_active %}
+                <span class="badge badge-active">Active</span>
+              {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <a class="action-link primary" href="{% url 'dashboard:client-edit' client.pk %}">Edit</a>
+              {% if client.is_active %}
+                <button
+                  type="button"
+                  class="action-link danger link-button"
+                  onclick="openDeactivateModal('{% url 'dashboard:client-deactivate' client.pk %}', '{{ client.first_name|default:client.phone|escapejs }}')"
+                >Deactivate</button>
+              {% else %}
+                <form method="post" action="{% url 'dashboard:client-activate' client.pk %}" style="display:inline">
+                  {% csrf_token %}
+                  <button type="submit" class="action-link primary link-button">Activate</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="cell-sub">No clients found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">Clients with order history are deactivated, never deleted. (Order counts will show here once the Orders module is built.)</p>
+
+  <div id="deactivate-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="deactivate-modal-title">Deactivate client?</h3>
+      <p id="deactivate-modal-body">
+        They will no longer be able to log in. Their order history is kept. You can activate the account again at any time.
+      </p>
+      <form method="post" id="deactivate-modal-form">
+        {% csrf_token %}
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDeactivateModal()">Cancel</button>
+          <button type="submit" class="btn btn-danger">Deactivate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openDeactivateModal(url, name) {
+      document.getElementById('deactivate-modal-title').textContent = 'Deactivate ' + name + '?';
+      document.getElementById('deactivate-modal-form').action = url;
+      document.getElementById('deactivate-modal').hidden = false;
+    }
+    function closeDeactivateModal() {
+      document.getElementById('deactivate-modal').hidden = true;
+    }
+  </script>
+{% endblock %}
