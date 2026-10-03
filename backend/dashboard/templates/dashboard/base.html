@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Moni Coffee Admin{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <div class="brand-name">Moni Coffee</div>
+          <div class="brand-sub">Admin Dashboard</div>
+        </div>
+      </div>
+
+      <div class="nav-label">Operations</div>
+      <div class="nav-item disabled">Orders</div>
+      <div class="nav-item disabled">POS</div>
+
+      <div class="nav-label">Catalog</div>
+      <div class="nav-item disabled">Menu Items</div>
+      <div class="nav-item disabled">Categories</div>
+      <div class="nav-item disabled">Stock</div>
+
+      <div class="nav-label">People</div>
+      {% if user.is_authenticated %}
+        <a class="nav-item {% block nav_clients_active %}{% endblock %}" href="{% url 'dashboard:client-list' %}">Clients</a>
+      {% else %}
+        <div class="nav-item disabled">Clients</div>
+      {% endif %}
+      {% if user.is_authenticated and user.role == "super_admin" %}
+        <a class="nav-item {% block nav_staff_active %}{% endblock %}" href="{% url 'dashboard:staff-list' %}">
+          Staff <span class="nav-badge">Owner</span>
+        </a>
+      {% endif %}
+
+      {% if user.is_authenticated %}
+        <div class="sidebar-footer">
+          <div class="avatar">{{ user.first_name|default:user.username|slice:":2"|upper }}</div>
+          <div>
+            <div class="cell-name" style="font-size:0.9rem">{{ user.first_name|default:user.username }}</div>
+            <div class="cell-sub">
+              {% if user.role == "super_admin" %}Super Admin{% else %}Staff{% endif %}
+              &middot; <a href="{% url 'dashboard:logout' %}">Log out</a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </aside>
+
+    <main class="main">
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <div class="message-success">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>
