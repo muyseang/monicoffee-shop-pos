@@ -1,0 +1,120 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Staff Accounts — Moni Coffee{% endblock %}
+{% block nav_staff_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Staff Accounts</h1>
+      <p>Only the Owner / Super Admin can manage staff</p>
+    </div>
+    <div class="role-tag">Owner &middot; Super Admin</div>
+  </div>
+
+  <form class="toolbar" method="get">
+    <div class="field">
+      <label for="q">Search</label>
+      <input type="text" id="q" name="q" value="{{ query }}" placeholder="Search name or username">
+    </div>
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" name="status" onchange="this.form.submit()">
+        <option value="" {% if not status %}selected{% endif %}>All statuses</option>
+        <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <a class="btn btn-primary" href="{% url 'dashboard:staff-create' %}">+ Add Staff</a>
+  </form>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Staff</th>
+          <th>Role</th>
+          <th>Created</th>
+          <th>Last Login</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in staff_members %}
+          <tr>
+            <td>
+              <div class="cell-name">
+                {{ member.first_name|default:member.username }}{% if member == user %} (You){% endif %}
+              </div>
+              <div class="cell-sub">{{ member.username }}</div>
+            </td>
+            <td>{% if member.role == "super_admin" %}Super Admin{% else %}Staff{% endif %}</td>
+            <td>{{ member.date_joined|date:"d M Y" }}</td>
+            <td>{% if member.last_login %}{{ member.last_login|date:"d M Y H:i" }}{% else %}—{% endif %}</td>
+            <td>
+              {% if member.is_active %}
+                <span class="badge badge-active">Active</span>
+              {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if member == user %}
+                <span class="action-muted">Your own account can't be deactivated</span>
+              {% elif member.role == "staff" %}
+                <a class="action-link primary" href="{% url 'dashboard:staff-edit' member.pk %}">Edit</a>
+                {% if member.is_active %}
+                  <button
+                    type="button"
+                    class="action-link danger link-button"
+                    onclick="openDeactivateModal('{% url 'dashboard:staff-deactivate' member.pk %}', '{{ member.first_name|default:member.username|escapejs }}')"
+                  >Deactivate</button>
+                {% else %}
+                  <form method="post" action="{% url 'dashboard:staff-activate' member.pk %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="action-link primary link-button">Activate</button>
+                  </form>
+                {% endif %}
+              {% else %}
+                <span class="action-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="cell-sub">No staff accounts found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">Accounts linked to orders or stock history are deactivated, never deleted.</p>
+
+  <div id="deactivate-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="deactivate-modal-title">Deactivate staff?</h3>
+      <p id="deactivate-modal-body">
+        They will no longer be able to log in. You can activate the account again at any time.
+      </p>
+      <form method="post" id="deactivate-modal-form">
+        {% csrf_token %}
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDeactivateModal()">Cancel</button>
+          <button type="submit" class="btn btn-danger">Deactivate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openDeactivateModal(url, name) {
+      document.getElementById('deactivate-modal-title').textContent = 'Deactivate ' + name + '?';
+      document.getElementById('deactivate-modal-form').action = url;
+      document.getElementById('deactivate-modal').hidden = false;
+    }
+    function closeDeactivateModal() {
+      document.getElementById('deactivate-modal').hidden = true;
+    }
+  </script>
+{% endblock %}
