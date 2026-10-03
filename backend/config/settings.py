@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "accounts",
     "menu",
+    "dashboard",
 ]
 
 MIDDLEWARE = [
@@ -67,6 +68,10 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
+
+LOGIN_URL = "dashboard:login"
+LOGIN_REDIRECT_URL = "dashboard:home"
+LOGOUT_REDIRECT_URL = "dashboard:login"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

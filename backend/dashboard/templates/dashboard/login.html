@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff Login — Moni Coffee</title>
+  <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+</head>
+<body>
+  <div class="login-screen">
+    <div class="login-panel">
+      <h1>Moni Coffee</h1>
+      <p>POS &amp; Client Ordering — Admin Dashboard</p>
+    </div>
+
+    <div class="login-form-wrap">
+      <form class="login-form" method="post">
+        {% csrf_token %}
+        <h2>Staff Login</h2>
+        <p>Sign in with your Owner or Staff account.</p>
+
+        {% if form.non_field_errors %}
+          <div class="form-errors">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <div class="field">
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+        </div>
+        <div class="field">
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Log in</button>
+
+        <p class="hint">Deactivated accounts cannot log in. Contact the Owner if you need access.</p>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
