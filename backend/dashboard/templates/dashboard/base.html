@@ -23,8 +23,16 @@
       <div class="nav-item disabled">POS</div>
 
       <div class="nav-label">Catalog</div>
-      <div class="nav-item disabled">Menu Items</div>
-      <div class="nav-item disabled">Categories</div>
+      {% if user.is_authenticated %}
+        <a class="nav-item {% block nav_menu_items_active %}{% endblock %}" href="{% url 'dashboard:menu-item-list' %}">Menu Items</a>
+      {% else %}
+        <div class="nav-item disabled">Menu Items</div>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <a class="nav-item {% block nav_categories_active %}{% endblock %}" href="{% url 'dashboard:category-list' %}">Categories</a>
+      {% else %}
+        <div class="nav-item disabled">Categories</div>
+      {% endif %}
       {% if user.is_authenticated %}
         <a class="nav-item {% block nav_stock_active %}{% endblock %}" href="{% url 'dashboard:stock-list' %}">Stock</a>
       {% else %}
@@ -68,5 +76,6 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+  <script src="{% static 'dashboard/live-search.js' %}"></script>
 </body>
 </html>

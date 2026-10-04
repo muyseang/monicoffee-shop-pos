@@ -50,8 +50,8 @@ class Command(BaseCommand):
         client.set_password("Client@12345")
         client.save()
 
-        for cat_name, items in DEMO_MENU.items():
-            category, _ = Category.objects.get_or_create(name=cat_name)
+        for position, (cat_name, items) in enumerate(DEMO_MENU.items(), start=1):
+            category, _ = Category.objects.get_or_create(name=cat_name, defaults={"display_order": position})
             for name, desc, price, stock in items:
                 MenuItem.objects.update_or_create(
                     category=category,

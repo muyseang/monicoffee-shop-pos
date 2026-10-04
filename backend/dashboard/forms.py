@@ -1,9 +1,14 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
+from django.db.models import Max
 
 from accounts.models import User
 from accounts.serializers import normalize_phone
+from menu.models import Category, ItemOption, MenuItem
 
 
 class StaffLoginForm(forms.Form):
@@ -153,3 +158,142 @@ class RestockForm(forms.Form):
 
 class AdjustStockForm(forms.Form):
     quantity = forms.IntegerField(min_value=0, max_value=100000)
+
+
+class CategoryForm(forms.ModelForm):
+    display_order = forms.IntegerField(
+        min_value=1,
+        max_value=1000,
+        required=False,
+        help_text="Lower numbers are listed first. Leave blank to add it at the end.",
+    )
+
+    class Meta:
+        model = Category
+        fields = ["name", "display_order"]
+        widgets = {"name": forms.TextInput(attrs={"placeholder": "e.g. Cold Drinks"})}
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        # MySQL's default collation compares case-insensitively, so "coffee"
+        # would hit the unique constraint as a crash — catch it as a form error.
+        existing = Category.objects.filter(name__iexact=name).exclude(pk=self.instance.pk)
+        if existing.exists():
+            raise forms.ValidationError("A category with this name already exists.")
+        return name
+
+    def clean_display_order(self):
+        display_order = self.cleaned_data.get("display_order")
+        if display_order is None:
+            last = Category.objects.exclude(pk=self.instance.pk).aggregate(Max("display_order"))
+            display_order = (last["display_order__max"] or 0) + 1
+        return display_order
+
+
+class MenuItemForm(forms.ModelForm):
+    MAX_IMAGE_BYTES = 2 * 1024 * 1024
+    ALLOWED_IMAGE_FORMATS = {"PNG", "JPEG"}
+
+    price = forms.DecimalField(min_value=Decimal("0.01"), max_value=Decimal("9999.99"), decimal_places=2)
+    stock = forms.IntegerField(min_value=0, max_value=100000)
+    image = forms.ImageField(required=False, widget=forms.FileInput(attrs={"accept": "image/png,image/jpeg"}))
+    remove_image = forms.BooleanField(required=False)
+
+    class Meta:
+        model = MenuItem
+        fields = ["name", "description", "category", "price", "stock", "is_available", "image"]
+        widgets = {
+            "name": forms.TextInput(attrs={"placeholder": "e.g. Caramel Macchiato"}),
+            "description": forms.Textarea(attrs={"rows": 3, "placeholder": "Short description shown to customers"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].empty_label = "Select a category"
+        self.fields["price"].widget.attrs.update({"step": "0.01", "placeholder": "0.00"})
+
+    def clean_name(self):
+        return self.cleaned_data["name"].strip()
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        # Only a new upload carries .image (set by Pillow during validation);
+        # the item's existing file needs no re-checking.
+        if image and hasattr(image, "image"):
+            if image.size > self.MAX_IMAGE_BYTES:
+                raise forms.ValidationError("Image must be 2 MB or smaller.")
+            if image.image.format not in self.ALLOWED_IMAGE_FORMATS:
+                raise forms.ValidationError("Image must be a PNG or JPG file.")
+        return image
+
+    def clean(self):
+        cleaned = super().clean()
+        name = cleaned.get("name")
+        category = cleaned.get("category")
+        if name and category:
+            # Same reason as CategoryForm: MySQL compares names case-insensitively,
+            # so check here rather than let unique_together raise a crash.
+            existing = MenuItem.objects.filter(category=category, name__iexact=name).exclude(pk=self.instance.pk)
+            if existing.exists():
+                self.add_error("name", f"{category.name} already has an item with this name.")
+        return cleaned
+
+    def save(self, commit=True):
+        old_image = MenuItem.objects.get(pk=self.instance.pk).image if self.instance.pk else None
+        new_upload = "image" in self.changed_data and self.cleaned_data.get("image")
+
+        if self.cleaned_data.get("remove_image") and not new_upload:
+            self.instance.image = None
+
+        item = super().save(commit=commit)
+
+        # Django never deletes replaced files on its own; without this every
+        # re-upload would leave the old image behind in MEDIA_ROOT. on_commit
+        # waits for the surrounding transaction, so a rollback keeps the file.
+        if commit and old_image and old_image.name != (item.image.name if item.image else None):
+            transaction.on_commit(lambda: old_image.delete(save=False))
+        return item
+
+
+class ItemOptionForm(forms.ModelForm):
+    choices_text = forms.CharField(
+        required=False,
+        max_length=255,
+        widget=forms.TextInput(attrs={"placeholder": "Optional"}),
+    )
+    extra_price = forms.DecimalField(
+        required=False,
+        min_value=0,
+        max_value=Decimal("999.99"),
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={"step": "0.01", "placeholder": "0.00"}),
+    )
+
+    class Meta:
+        model = ItemOption
+        fields = ["name", "extra_price"]
+        widgets = {"name": forms.TextInput(attrs={"placeholder": "e.g. Size"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial["choices_text"] = ", ".join(self.instance.choices)
+
+    def clean_extra_price(self):
+        return self.cleaned_data.get("extra_price") or Decimal("0")
+
+    def save(self, commit=True):
+        text = self.cleaned_data.get("choices_text", "")
+        self.instance.choices = [choice.strip() for choice in text.split(",") if choice.strip()]
+        return super().save(commit=commit)
+
+
+ItemOptionFormSet = forms.inlineformset_factory(
+    MenuItem,
+    ItemOption,
+    form=ItemOptionForm,
+    extra=0,
+    can_delete=True,
+    max_num=10,
+    validate_max=True,
+)
