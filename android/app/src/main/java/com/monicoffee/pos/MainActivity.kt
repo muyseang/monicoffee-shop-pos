@@ -98,6 +98,7 @@ class MainActivity : Activity() {
         root = column().apply { setBackgroundColor(Color.WHITE) }; setContentView(root)
         when (to) {
             "Home", "Explore", "Favorites" -> menu(to)
+            "Details" -> details()
             else -> menu("Home")
         }
     }
@@ -182,6 +183,34 @@ class MainActivity : Activity() {
         }
     }
     private fun unitPrice() = products[selected].price + (if(size=="L") 2.0 else if(size=="M") 1.0 else 0.0) + addons.size * 0.5
+    private fun details() {
+        val p=products[selected]
+        header("Details", icon("heart", if(selected in favorites) Color.RED else muted) { if(!favorites.add(selected)) favorites.remove(selected); show("Details") })
+        val b=content(); b.addView(image(if (selected == 1) R.drawable.coffee_detail else p.photo,200)); space(b,24)
+        val title=row(); title.addView(text(p.name,19f,ink,true),LinearLayout.LayoutParams(0,-2,1f)); title.addView(text("♧  Coffee",13f,green)); b.addView(title)
+        space(b,6); b.addView(text("Iced/Hot",13f,muted)); divider(b); b.addView(text("Description",15f,ink,true)); space(b,14)
+        b.addView(text("${p.name}, a unique blend of rich coffee, silky milk, and sweet caramel, delivering a layered taste experience. Every sip is a sweet tribute to the good life.",14f,Color.GRAY).apply { setLineSpacing(dp(4).toFloat(),1f) }); space(b,24)
+        b.addView(text("Add-ons",15f,ink,true)); space(b,12)
+        chips(b,listOf("Extra Shot","Vanilla Syrup","Caramel Syrup"),addons.joinToString("|")) { if(!addons.add(it)) addons.remove(it); show("Details") }
+        space(b,24)
+        val options=row().apply { gravity=Gravity.TOP }
+        val sizes=column(); sizes.addView(text("Size",15f,ink,true)); space(sizes,12)
+        chips(sizes,listOf("L","M","S"),size) { size=it; show("Details") }
+        options.addView(sizes,LinearLayout.LayoutParams(0,-2,1f))
+        val quantities=column(); quantities.addView(text("Quantity",15f,ink,true)); space(quantities,12)
+        val q=row()
+        q.addView(button("−") { if(quantity>1) quantity--; show("Details") }.apply { minHeight=dp(36) },LinearLayout.LayoutParams(dp(36),dp(36)))
+        q.addView(text("  $quantity  ",17f)); q.addView(button("+") { quantity++; show("Details") }.apply { minHeight=dp(36) },LinearLayout.LayoutParams(dp(36),dp(36)))
+        quantities.addView(q); options.addView(quantities); b.addView(options)
+        val bottom=row().apply { setPadding(dp(24),dp(16),dp(24),dp(20)); elevation=dp(8).toFloat(); setBackgroundColor(Color.WHITE) }
+        val price=column(); price.addView(text(money(unitPrice()*quantity),25f,ink,true)); price.addView(text("Total Price",13f,muted))
+        bottom.addView(price,LinearLayout.LayoutParams(0,-2,1f))
+        bottom.addView(button("Add to Cart") {
+            val existing=cart.find { it.product==selected && it.size==size && it.extras==addons }
+            if(existing!=null) existing.count+=quantity else cart.add(CartItem(selected,size,addons.toSet(),quantity,unitPrice()))
+            navigate("Cart")
+        },LinearLayout.LayoutParams(dp(166),dp(56))); root.addView(bottom)
+    }
     private fun total() = cart.sumOf { it.price*it.count }
     private fun summary(parent: LinearLayout,label: String,value: String) { parent.addView(row().apply { addView(text(label,16f),LinearLayout.LayoutParams(0,-2,1f)); addView(text(value,16f,green,true)) }) }
     private class Icon(context: android.content.Context, val kind: String, val tint: Int): View(context) {
