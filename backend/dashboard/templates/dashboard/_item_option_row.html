@@ -1,0 +1,17 @@
+<div class="option-row"{% if f.DELETE.value %} hidden{% endif %}>
+  {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+  <span class="option-delete" hidden>{{ f.DELETE }}</span>
+  <div>
+    {{ f.name }}
+    {% if f.name.errors %}<div class="form-errors">{{ f.name.errors.0 }}</div>{% endif %}
+  </div>
+  <div>
+    {{ f.choices_text }}
+    {% if f.choices_text.errors %}<div class="form-errors">{{ f.choices_text.errors.0 }}</div>{% endif %}
+  </div>
+  <div>
+    {{ f.extra_price }}
+    {% if f.extra_price.errors %}<div class="form-errors">{{ f.extra_price.errors.0 }}</div>{% endif %}
+  </div>
+  <button type="button" class="action-link danger link-button" data-remove-option>Remove</button>
+</div>

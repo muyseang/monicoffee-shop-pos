@@ -15,7 +15,7 @@
   <form class="toolbar" method="get">
     <div class="field">
       <label for="q">Search</label>
-      <input type="search" id="q" name="q" value="{{ query }}" placeholder="Search item" autocomplete="off">
+      <input type="search" id="q" name="q" value="{{ query }}" placeholder="Search item" autocomplete="off" data-live-search data-server-query="{{ query }}">
     </div>
     <div class="field">
       <label for="category">Category</label>
@@ -51,7 +51,7 @@
       </thead>
       <tbody>
         {% for item in items %}
-          <tr data-item-name="{{ item.name|lower }}">
+          <tr data-search-name="{{ item.name|lower }}">
             <td class="cell-name">{{ item.name }}</td>
             <td>{{ item.category.name }}</td>
             <td class="cell-name">{{ item.stock }}</td>
@@ -170,26 +170,6 @@
       modal.hidden = false;
       input.focus();
     }
-
-    // Filter the rows already on the page as the user types. The server-side
-    // ?q= search (pressing Enter) still works and keeps the term in the URL.
-    const searchInput = document.getElementById('q');
-    const itemRows = document.querySelectorAll('tr[data-item-name]');
-    searchInput.addEventListener('input', () => {
-      const term = searchInput.value.trim().toLowerCase();
-      // Rows from an earlier server search are already narrowed down, so
-      // clearing the box has to reload to bring the other items back.
-      if (term === '' && {{ query|yesno:"true,false" }}) {
-        searchInput.form.submit();
-        return;
-      }
-      let visible = 0;
-      itemRows.forEach((row) => {
-        row.hidden = !row.dataset.itemName.includes(term);
-        if (!row.hidden) visible += 1;
-      });
-      document.getElementById('no-search-results').hidden = visible > 0 || itemRows.length === 0;
-    });
 
     document.querySelectorAll('[data-modal]').forEach((button) => {
       button.addEventListener('click', () => openStockModal(button.dataset.modal, button));

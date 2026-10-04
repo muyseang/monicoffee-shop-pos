@@ -1,0 +1,52 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if is_create %}Add Category{% else %}Edit Category{% endif %} — Moni Coffee{% endblock %}
+{% block nav_categories_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>{% if is_create %}Add Category{% else %}Edit Category{% endif %}</h1>
+      <p>{% if is_create %}Create a new group for menu items{% else %}Update {{ category.name }}{% endif %}</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-layout">
+      <div class="panel">
+        <h3>Category details</h3>
+
+        {% if form.non_field_errors %}
+          <div class="form-errors">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
+
+        <div class="field">
+          <label for="{{ form.name.id_for_label }}">Name *</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="form-errors">{{ form.name.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.display_order.id_for_label }}">Display order</label>
+          {{ form.display_order }}
+          {% if form.display_order.errors %}<div class="form-errors">{{ form.display_order.errors.0 }}</div>{% endif %}
+          <p class="info-note">{{ form.display_order.help_text }}</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Save</h3>
+        {% if not is_create %}
+          <p class="info-note">{{ category.items.count }} menu item{{ category.items.count|pluralize }} in this category.</p>
+        {% endif %}
+
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px">
+          <button type="submit" class="btn btn-primary">Save Category</button>
+          <a class="btn btn-secondary" href="{% url 'dashboard:category-list' %}" style="text-align:center">Cancel</a>
+        </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}
