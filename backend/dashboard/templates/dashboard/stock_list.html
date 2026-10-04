@@ -1,0 +1,201 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Stock — Moni Coffee{% endblock %}
+{% block nav_stock_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Stock</h1>
+      <p>Manage stock per item and manually hide items</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form class="toolbar" method="get">
+    <div class="field">
+      <label for="q">Search</label>
+      <input type="search" id="q" name="q" value="{{ query }}" placeholder="Search item" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="category">Category</label>
+      <select id="category" name="category" onchange="this.form.submit()">
+        <option value="" {% if not category %}selected{% endif %}>All categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.pk }}" {% if category == cat.pk|stringformat:"d" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="level">Stock level</label>
+      <select id="level" name="level" onchange="this.form.submit()">
+        <option value="" {% if not level %}selected{% endif %}>All stock levels</option>
+        {% for value, label in levels %}
+          <option value="{{ value }}" {% if level == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>Stock Qty</th>
+          <th>Status</th>
+          <th>Show to Customers</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr data-item-name="{{ item.name|lower }}">
+            <td class="cell-name">{{ item.name }}</td>
+            <td>{{ item.category.name }}</td>
+            <td class="cell-name">{{ item.stock }}</td>
+            <td>
+              {% if item.stock_status == "in_stock" %}
+                <span class="badge badge-active">In Stock</span>
+              {% elif item.stock_status == "out_of_stock" %}
+                <span class="badge badge-danger">Out of Stock</span>
+              {% else %}
+                <span class="badge badge-inactive">Unavailable</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" action="{% if item.is_available %}{% url 'dashboard:stock-hide' item.pk %}{% else %}{% url 'dashboard:stock-show' item.pk %}{% endif %}">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="switch"
+                  role="switch"
+                  aria-checked="{% if item.is_available %}true{% else %}false{% endif %}"
+                  aria-label="Show {{ item.name }} to customers"
+                ></button>
+              </form>
+            </td>
+            <td>
+              <button
+                type="button"
+                class="action-link primary link-button"
+                data-modal="restock"
+                data-url="{% url 'dashboard:stock-restock' item.pk %}"
+                data-name="{{ item.name }}"
+                data-stock="{{ item.stock }}"
+              >Restock</button>
+              <button
+                type="button"
+                class="action-link primary link-button"
+                data-modal="adjust"
+                data-url="{% url 'dashboard:stock-adjust' item.pk %}"
+                data-name="{{ item.name }}"
+                data-stock="{{ item.stock }}"
+              >Adjust</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="cell-sub">No items found.</td></tr>
+        {% endfor %}
+        <tr id="no-search-results" hidden><td colspan="6" class="cell-sub">No items match your search.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">Stock will be deducted when an order is created and returned automatically if the order is rejected or cancelled. (This starts working once the Orders module is built.)</p>
+
+  <div id="restock-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Restock &ldquo;<span data-field="name"></span>&rdquo;</h3>
+      <div class="stat-row"><span>Current stock</span><strong data-field="stock"></strong></div>
+      <form method="post" data-field="form">
+        {% csrf_token %}
+        <div class="field">
+          <label for="restock-quantity">Quantity to add *</label>
+          <input type="number" id="restock-quantity" name="quantity" min="1" max="10000" step="1" required>
+        </div>
+        <div class="stat-row"><span>New stock</span><strong class="stat-highlight" data-field="result"></strong></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="adjust-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Adjust &ldquo;<span data-field="name"></span>&rdquo;</h3>
+      <div class="stat-row"><span>Current stock</span><strong data-field="stock"></strong></div>
+      <form method="post" data-field="form">
+        {% csrf_token %}
+        <div class="field">
+          <label for="adjust-quantity">New quantity *</label>
+          <input type="number" id="adjust-quantity" name="quantity" min="0" max="100000" step="1" required>
+        </div>
+        <div class="stat-row"><span>Change</span><strong class="stat-highlight" data-field="result"></strong></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Restock shows current + added; Adjust shows the signed difference
+    // between the new count and the current one.
+    const preview = {
+      restock: (current, value) => current + value,
+      adjust: (current, value) => (value - current > 0 ? '+' : '') + (value - current),
+    };
+
+    function openStockModal(kind, button) {
+      const modal = document.getElementById(kind + '-modal');
+      const field = (name) => modal.querySelector('[data-field="' + name + '"]');
+      const input = modal.querySelector('input[name="quantity"]');
+      const current = Number(button.dataset.stock);
+
+      field('name').textContent = button.dataset.name;
+      field('stock').textContent = current;
+      field('form').action = button.dataset.url;
+      input.value = kind === 'adjust' ? current : '';
+      input.oninput = () => {
+        const value = parseInt(input.value, 10);
+        field('result').textContent = Number.isNaN(value) ? '—' : preview[kind](current, value);
+      };
+      input.oninput();
+
+      modal.hidden = false;
+      input.focus();
+    }
+
+    // Filter the rows already on the page as the user types. The server-side
+    // ?q= search (pressing Enter) still works and keeps the term in the URL.
+    const searchInput = document.getElementById('q');
+    const itemRows = document.querySelectorAll('tr[data-item-name]');
+    searchInput.addEventListener('input', () => {
+      const term = searchInput.value.trim().toLowerCase();
+      // Rows from an earlier server search are already narrowed down, so
+      // clearing the box has to reload to bring the other items back.
+      if (term === '' && {{ query|yesno:"true,false" }}) {
+        searchInput.form.submit();
+        return;
+      }
+      let visible = 0;
+      itemRows.forEach((row) => {
+        row.hidden = !row.dataset.itemName.includes(term);
+        if (!row.hidden) visible += 1;
+      });
+      document.getElementById('no-search-results').hidden = visible > 0 || itemRows.length === 0;
+    });
+
+    document.querySelectorAll('[data-modal]').forEach((button) => {
+      button.addEventListener('click', () => openStockModal(button.dataset.modal, button));
+    });
+    document.querySelectorAll('.modal-overlay [data-close]').forEach((button) => {
+      button.addEventListener('click', () => { button.closest('.modal-overlay').hidden = true; });
+    });
+  </script>
+{% endblock %}
