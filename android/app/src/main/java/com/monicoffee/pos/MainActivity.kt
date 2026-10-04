@@ -106,8 +106,8 @@ class MainActivity : Activity() {
             "Payment Method" -> payments()
             "Login", "Register", "Verification" -> auth(to)
             "Success" -> success()
+            "Cafe" -> cafe()
             "Transaction" -> transaction()
-            else -> menu("Home")
         }
     }
     private fun header(title: String, right: View? = null) {
@@ -289,6 +289,9 @@ class MainActivity : Activity() {
     }
     private fun transaction() {
         header("Transaction Details"); val b=content(); orders.firstOrNull()?.let { o-> b.addView(text("Order #${o.id}",24f,ink,true)); space(b,24); summary(b,"Status","Pending"); divider(b); summary(b,"Order type",o.type); divider(b); summary(b,"Payment",o.payment); divider(b); summary(b,"Items","${o.count}"); divider(b); summary(b,"Total",money(o.total)) }
+    }
+    private fun cafe() {
+        header("Moni Cafe"); val b=content(); b.addView(image(R.drawable.cafe,200)); space(b,24); b.addView(text("Moni Coffee, Phnom Penh",21f,ink,true)); space(b,12); b.addView(text("◷  07:00–23:00",14f,muted)); divider(b); b.addView(text("Location Details",16f,green,true)); space(b,24); b.addView(text("About",18f,ink,true)); space(b,12); b.addView(text("A cozy place to enjoy your favorite coffee, freshly prepared for dine-in or pickup.",15f,Color.GRAY)); footer("Browse Menu") { show("Home") }
     }
     private class Icon(context: android.content.Context, val kind: String, val tint: Int): View(context) {
         override fun onDraw(c: Canvas) {
