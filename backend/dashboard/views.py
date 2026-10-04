@@ -2,14 +2,24 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import User
 from menu.models import Category, MenuItem
 
 from .decorators import super_admin_required
-from .forms import AdjustStockForm, ClientForm, RestockForm, StaffForm, StaffLoginForm
+from .forms import (
+    AdjustStockForm,
+    CategoryForm,
+    ClientForm,
+    ItemOptionFormSet,
+    MenuItemForm,
+    RestockForm,
+    StaffForm,
+    StaffLoginForm,
+)
 
 
 def login_view(request):
@@ -215,13 +225,13 @@ def client_set_active(request, pk, active):
 # restocking happens during a shift, not only when the Owner is around.
 
 
-@login_required(login_url="dashboard:login")
-def stock_list(request):
+def _menu_item_list_context(request):
+    """Search + category + stock-status filters shared by Stock and Menu Items."""
     query = request.GET.get("q", "").strip()
     category = request.GET.get("category", "")
     level = request.GET.get("level", "")
 
-    item_qs = MenuItem.objects.select_related("category").order_by("category__name", "name")
+    item_qs = MenuItem.objects.select_related("category").order_by("category__display_order", "category__name", "name")
 
     if query:
         item_qs = item_qs.filter(name__icontains=query)
@@ -234,18 +244,19 @@ def stock_list(request):
     elif level == MenuItem.StockStatus.UNAVAILABLE:
         item_qs = item_qs.filter(is_available=False)
 
-    return render(
-        request,
-        "dashboard/stock_list.html",
-        {
-            "items": item_qs,
-            "categories": Category.objects.order_by("name"),
-            "levels": MenuItem.StockStatus.choices,
-            "query": query,
-            "category": category,
-            "level": level,
-        },
-    )
+    return {
+        "items": item_qs,
+        "categories": Category.objects.all(),
+        "levels": MenuItem.StockStatus.choices,
+        "query": query,
+        "category": category,
+        "level": level,
+    }
+
+
+@login_required(login_url="dashboard:login")
+def stock_list(request):
+    return render(request, "dashboard/stock_list.html", _menu_item_list_context(request))
 
 
 @login_required(login_url="dashboard:login")
@@ -292,3 +303,129 @@ def stock_set_visible(request, pk, visible):
         )
 
     return redirect("dashboard:stock-list")
+
+
+# Categories are part of menu management, which the proposal (4.1.1) gives
+# to both Super Admin and Staff.
+
+
+@login_required(login_url="dashboard:login")
+def category_list(request):
+    query = request.GET.get("q", "").strip()
+
+    category_qs = Category.objects.annotate(item_count=Count("items"))
+    if query:
+        category_qs = category_qs.filter(name__icontains=query)
+
+    return render(request, "dashboard/category_list.html", {"categories": category_qs, "query": query})
+
+
+@login_required(login_url="dashboard:login")
+def category_create(request):
+    if request.method == "POST":
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category created.")
+            return redirect("dashboard:category-list")
+    else:
+        form = CategoryForm()
+
+    return render(request, "dashboard/category_form.html", {"form": form, "is_create": True})
+
+
+@login_required(login_url="dashboard:login")
+def category_edit(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == "POST":
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category updated.")
+            return redirect("dashboard:category-list")
+    else:
+        form = CategoryForm(instance=category)
+
+    return render(
+        request, "dashboard/category_form.html", {"form": form, "is_create": False, "category": category}
+    )
+
+
+@login_required(login_url="dashboard:login")
+def category_delete(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+
+    if request.method == "POST":
+        # MenuItem.category is PROTECT, so a category still in use can't be
+        # deleted — say why here instead of letting the database refuse.
+        item_count = category.items.count()
+        if item_count:
+            messages.error(
+                request,
+                f"{category.name} still has {item_count} menu item{'s' if item_count != 1 else ''}. "
+                "Move or delete them first.",
+            )
+        else:
+            category.delete()
+            messages.success(request, f"{category.name} deleted.")
+
+    return redirect("dashboard:category-list")
+
+
+# Menu items are open to both Super Admin and Staff (proposal 4.1.1).
+
+
+@login_required(login_url="dashboard:login")
+def menu_item_list(request):
+    return render(request, "dashboard/menu_item_list.html", _menu_item_list_context(request))
+
+
+def _menu_item_form_view(request, item=None):
+    if request.method == "POST":
+        form = MenuItemForm(request.POST, request.FILES, instance=item)
+        option_formset = ItemOptionFormSet(request.POST, instance=form.instance)
+        if form.is_valid() and option_formset.is_valid():
+            # One transaction, so a failure while saving options can't leave
+            # behind an item with only half of its options.
+            with transaction.atomic():
+                item = form.save()
+                option_formset.instance = item
+                option_formset.save()
+            messages.success(request, f"{item.name} saved.")
+            return redirect("dashboard:menu-item-list")
+    else:
+        form = MenuItemForm(instance=item)
+        option_formset = ItemOptionFormSet(instance=item)
+
+    return render(
+        request,
+        "dashboard/menu_item_form.html",
+        {"form": form, "option_formset": option_formset, "is_create": item is None, "item": item},
+    )
+
+
+@login_required(login_url="dashboard:login")
+def menu_item_create(request):
+    return _menu_item_form_view(request)
+
+
+@login_required(login_url="dashboard:login")
+def menu_item_edit(request, pk):
+    return _menu_item_form_view(request, get_object_or_404(MenuItem, pk=pk))
+
+
+@login_required(login_url="dashboard:login")
+def menu_item_delete(request, pk):
+    item = get_object_or_404(MenuItem, pk=pk)
+
+    if request.method == "POST":
+        # Options are deleted with the item (CASCADE). The image file has to be
+        # removed by hand — deleting the row doesn't touch MEDIA_ROOT.
+        image = item.image
+        item.delete()
+        if image:
+            image.delete(save=False)
+        messages.success(request, f"{item.name} deleted.")
+
+    return redirect("dashboard:menu-item-list")

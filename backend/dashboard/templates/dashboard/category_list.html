@@ -1,0 +1,98 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Categories — Moni Coffee{% endblock %}
+{% block nav_categories_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Categories</h1>
+      <p>Group menu items (e.g. Coffee, Tea, Pastry)</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form class="toolbar" method="get">
+    <div class="field">
+      <label for="q">Search</label>
+      <input type="search" id="q" name="q" value="{{ query }}" placeholder="Search categories" autocomplete="off" data-live-search data-server-query="{{ query }}">
+    </div>
+    <div class="toolbar-spacer"></div>
+    <a class="btn btn-primary" href="{% url 'dashboard:category-create' %}">+ Add Category</a>
+  </form>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Menu Items</th>
+          <th>Display Order</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for category in categories %}
+          <tr data-search-name="{{ category.name|lower }}">
+            <td class="cell-name">{{ category.name }}</td>
+            <td>{{ category.item_count }} item{{ category.item_count|pluralize }}</td>
+            <td>{{ category.display_order }}</td>
+            <td>
+              <a class="action-link primary" href="{% url 'dashboard:category-edit' category.pk %}">Edit</a>
+              <button
+                type="button"
+                class="action-link danger link-button"
+                data-url="{% url 'dashboard:category-delete' category.pk %}"
+                data-name="{{ category.name }}"
+                data-items="{{ category.item_count }}"
+              >Delete</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="cell-sub">No categories found.</td></tr>
+        {% endfor %}
+        <tr id="no-search-results" hidden><td colspan="4" class="cell-sub">No categories match your search.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="note">A category can only be deleted once it has no menu items.</p>
+
+  <div id="delete-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3 id="delete-modal-title"></h3>
+      <p id="delete-modal-body"></p>
+      <form method="post" id="delete-modal-form">
+        {% csrf_token %}
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="delete-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-danger" id="delete-modal-submit">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('delete-modal');
+
+    document.querySelectorAll('button[data-items]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const name = button.dataset.name;
+        const items = Number(button.dataset.items);
+        const blocked = items > 0;
+
+        document.getElementById('delete-modal-title').textContent =
+          blocked ? 'Can’t delete ' + name : 'Delete ' + name + '?';
+        document.getElementById('delete-modal-body').textContent = blocked
+          ? name + ' still has ' + items + ' menu item' + (items === 1 ? '' : 's') +
+            '. Move them to another category or delete them first.'
+          : 'This category has no menu items. This cannot be undone.';
+        document.getElementById('delete-modal-form').action = button.dataset.url;
+        document.getElementById('delete-modal-submit').hidden = blocked;
+        document.getElementById('delete-modal-cancel').textContent = blocked ? 'OK' : 'Cancel';
+        modal.hidden = false;
+      });
+    });
+    document.getElementById('delete-modal-cancel').addEventListener('click', () => { modal.hidden = true; });
+  </script>
+{% endblock %}

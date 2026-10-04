@@ -3,9 +3,12 @@ from django.db import models
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    # Lower numbers are listed first — in the dashboard and in the Android menu.
+    display_order = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name_plural = "categories"
+        ordering = ("display_order", "name")
 
     def __str__(self):
         return self.name
@@ -50,3 +53,19 @@ class MenuItem(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ItemOption(models.Model):
+    # Display-only in the MVP (proposal 4.1.4): options are shown to the
+    # customer but never change stock deduction.
+    menu_item = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="options")
+    name = models.CharField(max_length=50)
+    # e.g. ["Small", "Medium", "Large"]; empty for a simple add-on like "Extra Shot".
+    choices = models.JSONField(default=list, blank=True)
+    extra_price = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ("pk",)
+
+    def __str__(self):
+        return f"{self.menu_item.name}: {self.name}"
