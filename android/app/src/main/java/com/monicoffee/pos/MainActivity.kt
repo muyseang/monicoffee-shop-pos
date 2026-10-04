@@ -103,6 +103,7 @@ class MainActivity : Activity() {
             "Orders" -> ordersScreen()
             "Profile" -> profile()
             "Personal Info" -> personal()
+            "Payment Method" -> payments()
             "Success" -> success()
             "Transaction" -> transaction()
             else -> menu("Home")
@@ -262,6 +263,10 @@ class MainActivity : Activity() {
         header("Personal Info"); val b=content(); space(b,24); b.addView(text("SC",40f,Color.WHITE,true).apply { gravity=Gravity.CENTER; background=bg(green,100); layoutParams=LinearLayout.LayoutParams(dp(120),dp(120)).apply { gravity=Gravity.CENTER_HORIZONTAL } }); space(b,48)
         b.addView(text("Full name",13f,muted)); val name=field("Full name",customer); b.addView(name); b.addView(text("Address",13f,muted)); val addr=field("Address",address); b.addView(addr); b.addView(text("Phone number",13f,muted)); val number=field("Phone number",phone,true); b.addView(number)
         footer("Save") { if(name.text.isBlank() || number.text.isBlank()) { Toast.makeText(this,"Enter your name and phone number",Toast.LENGTH_SHORT).show() } else { customer=name.text.toString(); address=addr.text.toString(); phone=number.text.toString(); getPreferences(MODE_PRIVATE).edit().putString("name",customer).putString("address",address).putString("phone",phone).apply(); show("Profile") } }
+    }
+    private fun payments() {
+        header("Payment method"); val b=content(); b.addView(text("Payment Method",24f,ink,true)); space(b,30)
+        listOf("Cash","Manual QR Payment").forEach { value-> b.addView(text("${if(value=="Cash") "▣" else "QR"}     $value   ${if(value==payment) "✓" else ""}",21f,if(value==payment) green else ink).apply { setPadding(0,dp(18),0,dp(18)); setOnClickListener { payment=value; show("Payment Method") } }); divider(b) }
     }
     private fun success() {
         val b=content(); space(b,100); b.addView(text("✓",80f,green,true).apply { gravity=Gravity.CENTER }); space(b,28); b.addView(text("Order Successful!",27f,ink,true).apply { gravity=Gravity.CENTER }); space(b,16); b.addView(text("Your order has been placed. You can follow its progress in My Orders.",16f,muted).apply { gravity=Gravity.CENTER }); footer("View My Orders") { history.clear(); show("Orders") }
