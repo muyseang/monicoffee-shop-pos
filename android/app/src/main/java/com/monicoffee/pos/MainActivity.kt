@@ -104,6 +104,7 @@ class MainActivity : Activity() {
             "Profile" -> profile()
             "Personal Info" -> personal()
             "Payment Method" -> payments()
+            "Login", "Register", "Verification" -> auth(to)
             "Success" -> success()
             "Transaction" -> transaction()
             else -> menu("Home")
@@ -267,6 +268,21 @@ class MainActivity : Activity() {
     private fun payments() {
         header("Payment method"); val b=content(); b.addView(text("Payment Method",24f,ink,true)); space(b,30)
         listOf("Cash","Manual QR Payment").forEach { value-> b.addView(text("${if(value=="Cash") "▣" else "QR"}     $value   ${if(value==payment) "✓" else ""}",21f,if(value==payment) green else ink).apply { setPadding(0,dp(18),0,dp(18)); setOnClickListener { payment=value; show("Payment Method") } }); divider(b) }
+    }
+    private fun auth(mode: String) {
+        val b=content(); space(b,70); b.addView(text(if(mode=="Verification") "OTP Verification" else "Moni Coffee",32f,ink,true).apply { gravity=Gravity.CENTER }); space(b,12)
+        b.addView(text(if(mode=="Verification") "Enter the verification code sent to your phone." else "Enter your information below.",14f,muted).apply { gravity=Gravity.CENTER }); space(b,52)
+        val name=field("Full name"); if(mode=="Register") b.addView(name)
+        val number=field(if(mode=="Verification") "6-digit code" else "Phone number",numeric=true); b.addView(number); space(b,60)
+        if(mode=="Register") { b.addView(text("By signing up, you agree to our Terms and Conditions and our Privacy Policy.",14f,muted).apply { gravity=Gravity.CENTER }); space(b,16) }
+        b.addView(button(if(mode=="Login") "Log in" else if(mode=="Register") "Sign up" else "Verify") {
+            if(number.text.isBlank()) { number.error="Required" }
+            else if(mode=="Register" && name.text.isBlank()) name.error="Enter your name"
+            else if(mode=="Verification") { if(number.text.length!=6) number.error="Enter 6 digits" else { Toast.makeText(this,"Demo sign-in complete",Toast.LENGTH_SHORT).show(); history.clear(); show("Home") } }
+            else { phone=number.text.toString(); if(mode=="Register") customer=name.text.toString(); navigate("Verification") }
+        }); space(b,24)
+        if(mode=="Verification") b.addView(text("UI demo: enter any 6-digit code. SMS is not connected.",13f,muted))
+        footer(if(mode=="Login") "Don’t have an account? Sign up" else "Already have an account? Log in") { navigate(if(mode=="Login") "Register" else "Login") }
     }
     private fun success() {
         val b=content(); space(b,100); b.addView(text("✓",80f,green,true).apply { gravity=Gravity.CENTER }); space(b,28); b.addView(text("Order Successful!",27f,ink,true).apply { gravity=Gravity.CENTER }); space(b,16); b.addView(text("Your order has been placed. You can follow its progress in My Orders.",16f,muted).apply { gravity=Gravity.CENTER }); footer("View My Orders") { history.clear(); show("Orders") }
