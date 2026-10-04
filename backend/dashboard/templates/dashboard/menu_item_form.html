@@ -1,0 +1,154 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if is_create %}Add Menu Item{% else %}Edit Menu Item{% endif %} — Moni Coffee{% endblock %}
+{% block nav_menu_items_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>{% if is_create %}Add Menu Item{% else %}Edit Menu Item{% endif %}</h1>
+      <p>{% if is_create %}Fill in the item details{% else %}Update {{ item.name }}{% endif %}</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-layout">
+      <div>
+        <div class="panel">
+          <h3>Item details</h3>
+
+          {% if form.non_field_errors %}
+            <div class="form-errors">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          <div class="field">
+            <label for="{{ form.name.id_for_label }}">Name *</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="form-errors">{{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="field">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label for="{{ form.category.id_for_label }}">Category *</label>
+              {{ form.category }}
+              {% if form.category.errors %}<div class="form-errors">{{ form.category.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field">
+              <label for="{{ form.price.id_for_label }}">Price (USD) *</label>
+              {{ form.price }}
+              {% if form.price.errors %}<div class="form-errors">{{ form.price.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field">
+              <label for="{{ form.stock.id_for_label }}">Stock quantity *</label>
+              {{ form.stock }}
+              {% if form.stock.errors %}<div class="form-errors">{{ form.stock.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Item image (optional)</h3>
+          {% if item.image %}
+            <div class="current-image">
+              <img src="{{ item.image.url }}" alt="{{ item.name }}">
+              <label class="toggle-row">{{ form.remove_image }} Remove current image</label>
+            </div>
+          {% endif %}
+          <label class="dropzone" for="{{ form.image.id_for_label }}">
+            {{ form.image }}
+            <span class="dropzone-title" id="dropzone-title">
+              {% if item.image %}Click to replace or drag an image here{% else %}Click to upload or drag an image here{% endif %}
+            </span>
+            <span class="cell-sub">PNG or JPG, up to 2 MB</span>
+          </label>
+          {% if form.image.errors %}<div class="form-errors">{{ form.image.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="panel">
+          <h3>Item options (display only)</h3>
+          <p class="info-note" style="margin-top:0">Options are choices shown to the customer. They do not change stock in the MVP.</p>
+
+          {{ option_formset.management_form }}
+          {% if option_formset.non_form_errors %}
+            <div class="form-errors">{{ option_formset.non_form_errors.0 }}</div>
+          {% endif %}
+
+          <div class="option-row option-head">
+            <span>Option</span><span>Choices (comma separated)</span><span>Extra price</span><span></span>
+          </div>
+          <div id="option-rows">
+            {% for option_form in option_formset %}
+              {% include "dashboard/_item_option_row.html" with f=option_form %}
+            {% endfor %}
+          </div>
+          <template id="option-row-template">
+            {% include "dashboard/_item_option_row.html" with f=option_formset.empty_form %}
+          </template>
+          <button type="button" class="action-link primary link-button" id="add-option" style="margin-top:12px">+ Add option</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h3>Availability</h3>
+          <label class="switch-label">
+            {{ form.is_available }}
+            <span class="switch" aria-hidden="true"></span>
+            Available to order
+          </label>
+          <p class="info-note">An item at zero stock or switched off cannot be added to a new order.</p>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <button type="submit" class="btn btn-primary">Save Item</button>
+            <a class="btn btn-secondary" href="{% url 'dashboard:menu-item-list' %}">Cancel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <script>
+    // Image: show the chosen file's name, since the real <input> is invisible.
+    const imageInput = document.getElementById('{{ form.image.id_for_label }}');
+    imageInput.addEventListener('change', () => {
+      if (imageInput.files.length) {
+        document.getElementById('dropzone-title').textContent = imageInput.files[0].name;
+      }
+    });
+
+    // Options: "+ Add option" clones Django's empty form, giving it the next
+    // index; "Remove" ticks the row's DELETE box and hides it, so the formset
+    // deletes saved options and ignores unsaved ones.
+    const totalForms = document.getElementById('id_{{ option_formset.prefix }}-TOTAL_FORMS');
+    const maxForms = Number(document.getElementById('id_{{ option_formset.prefix }}-MAX_NUM_FORMS').value);
+    const rows = document.getElementById('option-rows');
+
+    function bindRemove(row) {
+      row.querySelector('[data-remove-option]').addEventListener('click', () => {
+        row.querySelector('input[name$="-DELETE"]').checked = true;
+        row.hidden = true;
+      });
+    }
+    rows.querySelectorAll('.option-row').forEach(bindRemove);
+
+    document.getElementById('add-option').addEventListener('click', () => {
+      const index = Number(totalForms.value);
+      if (index >= maxForms) return;
+      const html = document.getElementById('option-row-template').innerHTML.replace(/__prefix__/g, index);
+      rows.insertAdjacentHTML('beforeend', html);
+      totalForms.value = index + 1;
+      const row = rows.lastElementChild;
+      bindRemove(row);
+      row.querySelector('input[type="text"]').focus();
+    });
+  </script>
+{% endblock %}

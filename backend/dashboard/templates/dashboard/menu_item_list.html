@@ -1,0 +1,116 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Menu Items — Moni Coffee{% endblock %}
+{% block nav_menu_items_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Menu Items</h1>
+      <p>Create and manage items shown to customers</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form class="toolbar" method="get">
+    <div class="field">
+      <label for="q">Search</label>
+      <input type="search" id="q" name="q" value="{{ query }}" placeholder="Search item name" autocomplete="off" data-live-search data-server-query="{{ query }}">
+    </div>
+    <div class="field">
+      <label for="category">Category</label>
+      <select id="category" name="category" onchange="this.form.submit()">
+        <option value="" {% if not category %}selected{% endif %}>All categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat.pk }}" {% if category == cat.pk|stringformat:"d" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="level">Availability</label>
+      <select id="level" name="level" onchange="this.form.submit()">
+        <option value="" {% if not level %}selected{% endif %}>All availability</option>
+        {% for value, label in levels %}
+          <option value="{{ value }}" {% if level == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <a class="btn btn-primary" href="{% url 'dashboard:menu-item-create' %}">+ Add Item</a>
+  </form>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Availability</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr data-search-name="{{ item.name|lower }}">
+            <td>
+              <div class="cell-name">{{ item.name }}</div>
+              {% if item.description %}<div class="cell-sub">{{ item.description|truncatechars:48 }}</div>{% endif %}
+            </td>
+            <td>{{ item.category.name }}</td>
+            <td class="cell-name">${{ item.price }}</td>
+            <td>{{ item.stock }}</td>
+            <td>
+              {% if item.stock_status == "in_stock" %}
+                <span class="badge badge-active">In Stock</span>
+              {% elif item.stock_status == "out_of_stock" %}
+                <span class="badge badge-danger">Out of Stock</span>
+              {% else %}
+                <span class="badge badge-inactive">Unavailable</span>
+              {% endif %}
+            </td>
+            <td>
+              <a class="action-link primary" href="{% url 'dashboard:menu-item-edit' item.pk %}">Edit</a>
+              <button
+                type="button"
+                class="action-link danger link-button"
+                data-delete-url="{% url 'dashboard:menu-item-delete' item.pk %}"
+                data-name="{{ item.name }}"
+              >Delete</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="cell-sub">No menu items found.</td></tr>
+        {% endfor %}
+        <tr id="no-search-results" hidden><td colspan="6" class="cell-sub">No items match your search.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="delete-modal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <h3>Delete &ldquo;<span id="delete-modal-name"></span>&rdquo;?</h3>
+      <p>This removes the item from the menu. Items already used in past orders keep their order history.</p>
+      <form method="post" id="delete-modal-form">
+        {% csrf_token %}
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="delete-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const deleteModal = document.getElementById('delete-modal');
+    document.querySelectorAll('button[data-delete-url]').forEach((button) => {
+      button.addEventListener('click', () => {
+        document.getElementById('delete-modal-name').textContent = button.dataset.name;
+        document.getElementById('delete-modal-form').action = button.dataset.deleteUrl;
+        deleteModal.hidden = false;
+      });
+    });
+    document.getElementById('delete-modal-cancel').addEventListener('click', () => { deleteModal.hidden = true; });
+  </script>
+{% endblock %}
