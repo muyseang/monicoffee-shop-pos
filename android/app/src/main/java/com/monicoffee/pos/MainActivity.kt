@@ -100,6 +100,9 @@ class MainActivity : Activity() {
             "Home", "Explore", "Favorites" -> menu(to)
             "Details" -> details()
             "Cart", "Checkout" -> cartScreen(to == "Checkout")
+            "Orders" -> ordersScreen()
+            "Success" -> success()
+            "Transaction" -> transaction()
             else -> menu("Home")
         }
     }
@@ -240,6 +243,19 @@ class MainActivity : Activity() {
         }; if(!checkout) nav("Home")
     }
     private fun summary(parent: LinearLayout,label: String,value: String) { parent.addView(row().apply { addView(text(label,16f),LinearLayout.LayoutParams(0,-2,1f)); addView(text(value,16f,green,true)) }) }
+    private fun ordersScreen() {
+        header("My Orders"); val b=content(); chips(b,listOf("In Progress","Completed","Cancelled"),orderTab) { orderTab=it; show("Orders") }; space(b,20)
+        if(orderTab=="In Progress" && orders.isNotEmpty()) orders.forEach { o ->
+            val card=column().apply { background=bg(Color.WHITE,12,line); setPadding(dp(16),dp(16),dp(16),dp(16)); setOnClickListener { navigate("Transaction") } }
+            summary(card,"Order #${o.id}","Pending"); space(card,12); card.addView(text(o.type,13f,Color.GRAY)); divider(card); summary(card,"${o.count} items",money(o.total)); b.addView(card); space(b,12)
+        } else { space(b,60); b.addView(text("No ${orderTab.lowercase()} orders",20f,ink,true)); space(b,10); b.addView(text("Your orders will appear here after checkout.",14f,muted)) }; nav("Orders")
+    }
+    private fun success() {
+        val b=content(); space(b,100); b.addView(text("✓",80f,green,true).apply { gravity=Gravity.CENTER }); space(b,28); b.addView(text("Order Successful!",27f,ink,true).apply { gravity=Gravity.CENTER }); space(b,16); b.addView(text("Your order has been placed. You can follow its progress in My Orders.",16f,muted).apply { gravity=Gravity.CENTER }); footer("View My Orders") { history.clear(); show("Orders") }
+    }
+    private fun transaction() {
+        header("Transaction Details"); val b=content(); orders.firstOrNull()?.let { o-> b.addView(text("Order #${o.id}",24f,ink,true)); space(b,24); summary(b,"Status","Pending"); divider(b); summary(b,"Order type",o.type); divider(b); summary(b,"Payment",o.payment); divider(b); summary(b,"Items","${o.count}"); divider(b); summary(b,"Total",money(o.total)) }
+    }
     private class Icon(context: android.content.Context, val kind: String, val tint: Int): View(context) {
         override fun onDraw(c: Canvas) {
             super.onDraw(c); val s=width/40f; c.save(); c.scale(s,s)
