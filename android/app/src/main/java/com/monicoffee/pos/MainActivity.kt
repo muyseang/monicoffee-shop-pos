@@ -102,6 +102,7 @@ class MainActivity : Activity() {
             "Cart", "Checkout" -> cartScreen(to == "Checkout")
             "Orders" -> ordersScreen()
             "Profile" -> profile()
+            "Personal Info" -> personal()
             "Success" -> success()
             "Transaction" -> transaction()
             else -> menu("Home")
@@ -256,6 +257,11 @@ class MainActivity : Activity() {
         identity.addView(column().apply { addView(text(customer,25f,ink,true)); space(this,8); addView(text(phone,15f,muted)) }); b.addView(identity); space(b,40); b.addView(text("Basic Info",22f,ink,true)); space(b,12)
         listOf("Order History" to "Orders","Personal Info" to "Personal Info","Payment Method" to "Payment Method","My Favorites" to "Favorites").forEach { (label,target)-> b.addView(text("$label    ›",18f).apply { setPadding(0,dp(12),0,dp(12)); setOnClickListener { navigate(target) } }); divider(b) }; summary(b,"App Version","1.0")
         footer("Log Out") { AlertDialog.Builder(this).setTitle("Log out?").setMessage("You can sign in again with your phone number.").setPositiveButton("Log Out") { _,_->history.clear(); show("Login") }.setNegativeButton("Cancel",null).show() }; nav("Profile")
+    }
+    private fun personal() {
+        header("Personal Info"); val b=content(); space(b,24); b.addView(text("SC",40f,Color.WHITE,true).apply { gravity=Gravity.CENTER; background=bg(green,100); layoutParams=LinearLayout.LayoutParams(dp(120),dp(120)).apply { gravity=Gravity.CENTER_HORIZONTAL } }); space(b,48)
+        b.addView(text("Full name",13f,muted)); val name=field("Full name",customer); b.addView(name); b.addView(text("Address",13f,muted)); val addr=field("Address",address); b.addView(addr); b.addView(text("Phone number",13f,muted)); val number=field("Phone number",phone,true); b.addView(number)
+        footer("Save") { if(name.text.isBlank() || number.text.isBlank()) { Toast.makeText(this,"Enter your name and phone number",Toast.LENGTH_SHORT).show() } else { customer=name.text.toString(); address=addr.text.toString(); phone=number.text.toString(); getPreferences(MODE_PRIVATE).edit().putString("name",customer).putString("address",address).putString("phone",phone).apply(); show("Profile") } }
     }
     private fun success() {
         val b=content(); space(b,100); b.addView(text("✓",80f,green,true).apply { gravity=Gravity.CENTER }); space(b,28); b.addView(text("Order Successful!",27f,ink,true).apply { gravity=Gravity.CENTER }); space(b,16); b.addView(text("Your order has been placed. You can follow its progress in My Orders.",16f,muted).apply { gravity=Gravity.CENTER }); footer("View My Orders") { history.clear(); show("Orders") }
