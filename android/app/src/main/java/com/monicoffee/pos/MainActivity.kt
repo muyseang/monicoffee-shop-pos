@@ -101,6 +101,7 @@ class MainActivity : Activity() {
             "Details" -> details()
             "Cart", "Checkout" -> cartScreen(to == "Checkout")
             "Orders" -> ordersScreen()
+            "Profile" -> profile()
             "Success" -> success()
             "Transaction" -> transaction()
             else -> menu("Home")
@@ -249,6 +250,12 @@ class MainActivity : Activity() {
             val card=column().apply { background=bg(Color.WHITE,12,line); setPadding(dp(16),dp(16),dp(16),dp(16)); setOnClickListener { navigate("Transaction") } }
             summary(card,"Order #${o.id}","Pending"); space(card,12); card.addView(text(o.type,13f,Color.GRAY)); divider(card); summary(card,"${o.count} items",money(o.total)); b.addView(card); space(b,12)
         } else { space(b,60); b.addView(text("No ${orderTab.lowercase()} orders",20f,ink,true)); space(b,10); b.addView(text("Your orders will appear here after checkout.",14f,muted)) }; nav("Orders")
+    }
+    private fun profile() {
+        val b=content(); space(b,42); val identity=row(); identity.addView(text(customer.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString(""),32f,Color.WHITE,true).apply { gravity=Gravity.CENTER; background=bg(Color.rgb(22,100,74),100) },LinearLayout.LayoutParams(dp(76),dp(76)).apply { rightMargin=dp(20) })
+        identity.addView(column().apply { addView(text(customer,25f,ink,true)); space(this,8); addView(text(phone,15f,muted)) }); b.addView(identity); space(b,40); b.addView(text("Basic Info",22f,ink,true)); space(b,12)
+        listOf("Order History" to "Orders","Personal Info" to "Personal Info","Payment Method" to "Payment Method","My Favorites" to "Favorites").forEach { (label,target)-> b.addView(text("$label    ›",18f).apply { setPadding(0,dp(12),0,dp(12)); setOnClickListener { navigate(target) } }); divider(b) }; summary(b,"App Version","1.0")
+        footer("Log Out") { AlertDialog.Builder(this).setTitle("Log out?").setMessage("You can sign in again with your phone number.").setPositiveButton("Log Out") { _,_->history.clear(); show("Login") }.setNegativeButton("Cancel",null).show() }; nav("Profile")
     }
     private fun success() {
         val b=content(); space(b,100); b.addView(text("✓",80f,green,true).apply { gravity=Gravity.CENTER }); space(b,28); b.addView(text("Order Successful!",27f,ink,true).apply { gravity=Gravity.CENTER }); space(b,16); b.addView(text("Your order has been placed. You can follow its progress in My Orders.",16f,muted).apply { gravity=Gravity.CENTER }); footer("View My Orders") { history.clear(); show("Orders") }
