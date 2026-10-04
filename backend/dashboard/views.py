@@ -6,9 +6,10 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import User
+from menu.models import Category, MenuItem
 
 from .decorators import super_admin_required
-from .forms import ClientForm, StaffForm, StaffLoginForm
+from .forms import AdjustStockForm, ClientForm, RestockForm, StaffForm, StaffLoginForm
 
 
 def login_view(request):
@@ -208,3 +209,86 @@ def client_set_active(request, pk, active):
         )
 
     return redirect("dashboard:client-list")
+
+
+# Stock is open to both Super Admin and Staff, like Client management:
+# restocking happens during a shift, not only when the Owner is around.
+
+
+@login_required(login_url="dashboard:login")
+def stock_list(request):
+    query = request.GET.get("q", "").strip()
+    category = request.GET.get("category", "")
+    level = request.GET.get("level", "")
+
+    item_qs = MenuItem.objects.select_related("category").order_by("category__name", "name")
+
+    if query:
+        item_qs = item_qs.filter(name__icontains=query)
+    if category.isdigit():
+        item_qs = item_qs.filter(category_id=category)
+    if level == MenuItem.StockStatus.IN_STOCK:
+        item_qs = item_qs.filter(is_available=True, stock__gt=0)
+    elif level == MenuItem.StockStatus.OUT_OF_STOCK:
+        item_qs = item_qs.filter(is_available=True, stock=0)
+    elif level == MenuItem.StockStatus.UNAVAILABLE:
+        item_qs = item_qs.filter(is_available=False)
+
+    return render(
+        request,
+        "dashboard/stock_list.html",
+        {
+            "items": item_qs,
+            "categories": Category.objects.order_by("name"),
+            "levels": MenuItem.StockStatus.choices,
+            "query": query,
+            "category": category,
+            "level": level,
+        },
+    )
+
+
+@login_required(login_url="dashboard:login")
+def stock_restock(request, pk):
+    item = get_object_or_404(MenuItem, pk=pk)
+
+    if request.method == "POST":
+        form = RestockForm(request.POST)
+        if form.is_valid():
+            item.restock(form.cleaned_data["quantity"])
+            messages.success(request, f"{item.name} restocked. New stock: {item.stock}.")
+        else:
+            messages.error(request, f"{item.name} not restocked: {form.errors['quantity'][0]}")
+
+    return redirect("dashboard:stock-list")
+
+
+@login_required(login_url="dashboard:login")
+def stock_adjust(request, pk):
+    item = get_object_or_404(MenuItem, pk=pk)
+
+    if request.method == "POST":
+        form = AdjustStockForm(request.POST)
+        if form.is_valid():
+            item.stock = form.cleaned_data["quantity"]
+            item.save(update_fields=["stock"])
+            messages.success(request, f"{item.name} stock set to {item.stock}.")
+        else:
+            messages.error(request, f"{item.name} not adjusted: {form.errors['quantity'][0]}")
+
+    return redirect("dashboard:stock-list")
+
+
+@login_required(login_url="dashboard:login")
+def stock_set_visible(request, pk, visible):
+    item = get_object_or_404(MenuItem, pk=pk)
+
+    if request.method == "POST":
+        item.is_available = visible
+        item.save(update_fields=["is_available"])
+        messages.success(
+            request,
+            f"{item.name} {'shown to' if visible else 'hidden from'} customers.",
+        )
+
+    return redirect("dashboard:stock-list")

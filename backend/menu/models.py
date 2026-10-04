@@ -12,6 +12,11 @@ class Category(models.Model):
 
 
 class MenuItem(models.Model):
+    class StockStatus(models.TextChoices):
+        IN_STOCK = "in_stock", "In Stock"
+        OUT_OF_STOCK = "out_of_stock", "Out of Stock"
+        UNAVAILABLE = "unavailable", "Unavailable"
+
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="items")
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
@@ -26,6 +31,22 @@ class MenuItem(models.Model):
     @property
     def in_stock(self):
         return self.is_available and self.stock > 0
+
+    @property
+    def stock_status(self):
+        # A manually hidden item reads "Unavailable" whatever its quantity —
+        # hiding is the owner's explicit choice, so it outranks the count.
+        if not self.is_available:
+            return self.StockStatus.UNAVAILABLE
+        if self.stock > 0:
+            return self.StockStatus.IN_STOCK
+        return self.StockStatus.OUT_OF_STOCK
+
+    def restock(self, quantity):
+        # F() makes the database do the addition, so two people restocking at
+        # the same moment can't overwrite each other's change.
+        MenuItem.objects.filter(pk=self.pk).update(stock=models.F("stock") + quantity)
+        self.refresh_from_db(fields=["stock"])
 
     def __str__(self):
         return self.name

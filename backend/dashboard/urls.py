@@ -18,4 +18,9 @@ urlpatterns = [
     path("clients/<int:pk>/edit/", views.client_edit, name="client-edit"),
     path("clients/<int:pk>/deactivate/", views.client_set_active, {"active": False}, name="client-deactivate"),
     path("clients/<int:pk>/activate/", views.client_set_active, {"active": True}, name="client-activate"),
+    path("stock/", views.stock_list, name="stock-list"),
+    path("stock/<int:pk>/restock/", views.stock_restock, name="stock-restock"),
+    path("stock/<int:pk>/adjust/", views.stock_adjust, name="stock-adjust"),
+    path("stock/<int:pk>/show/", views.stock_set_visible, {"visible": True}, name="stock-show"),
+    path("stock/<int:pk>/hide/", views.stock_set_visible, {"visible": False}, name="stock-hide"),
 ]
