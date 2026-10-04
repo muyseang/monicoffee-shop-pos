@@ -99,6 +99,7 @@ class MainActivity : Activity() {
         when (to) {
             "Home", "Explore", "Favorites" -> menu(to)
             "Details" -> details()
+            "Cart", "Checkout" -> cartScreen(to == "Checkout")
             else -> menu("Home")
         }
     }
@@ -212,6 +213,32 @@ class MainActivity : Activity() {
         },LinearLayout.LayoutParams(dp(166),dp(56))); root.addView(bottom)
     }
     private fun total() = cart.sumOf { it.price*it.count }
+    private fun cartScreen(checkout: Boolean) {
+        header(if(checkout) "Order Summary" else "My Cart", if(checkout) null else icon("trash",Color.rgb(190,46,31)) { AlertDialog.Builder(this).setTitle("Clear your cart?").setPositiveButton("Clear") { _,_->cart.clear(); show("Cart") }.setNegativeButton("Cancel",null).show() })
+        val b=content(); var table: EditText?=null
+        if(checkout) {
+            chips(b,listOf("Dine in","Pickup"),if(pickup) "Pickup" else "Dine in") { pickup=it=="Pickup"; show("Checkout") }; space(b,28)
+            table=field(if(pickup) "Pickup time (e.g. 11:00 AM)" else "Table Number",numeric=!pickup); b.addView(table); divider(b)
+        } else { b.addView(text("You have ${cart.sumOf { it.count }} items in your cart",15f,ink,true)); space(b,24) }
+        val heading=row(); heading.addView(text("Order Items",17f,ink,true),LinearLayout.LayoutParams(0,-2,1f)); heading.addView(text("+ Add More",14f,green,true).apply { setOnClickListener { show("Home") } }); b.addView(heading); space(b,20)
+        if(cart.isEmpty()) { b.addView(text("Your cart is empty",20f,ink,true)); space(b,10); b.addView(text("Find your favorite cup on the menu.",14f,muted)) }
+        cart.toList().forEach { item ->
+            val r=row(); r.addView(image(products[item.product].photo,54),LinearLayout.LayoutParams(dp(54),dp(54)).apply { rightMargin=dp(12) })
+            val label=column(); label.addView(text(products[item.product].name,14f,ink,true)); space(label,4); label.addView(text("${item.size} • ${money(item.price)}",12f,muted)); r.addView(label,LinearLayout.LayoutParams(0,-2,1f))
+            r.addView(text("−",20f,muted).apply { setPadding(dp(10),dp(10),dp(10),dp(10)); setOnClickListener { item.count--; if(item.count==0) cart.remove(item); show(screen) } }); r.addView(text("${item.count}",14f)); r.addView(text("+",20f).apply { setPadding(dp(10),dp(10),dp(4),dp(10)); setOnClickListener { item.count++; show(screen) } }); b.addView(r); space(b,20)
+        }
+        divider(b); if(checkout) { b.addView(text("Payment Summary",17f,ink,true)); space(b,18); summary(b,"Subtotal",money(total())); divider(b) }; summary(b,"Total",money(total()))
+        if(cart.isNotEmpty()) {
+            if(checkout) { space(b,24); b.addView(text("$payment  ⌄",16f,green,true).apply { setOnClickListener { AlertDialog.Builder(this@MainActivity).setTitle("Payment method").setItems(arrayOf("Cash","Manual QR Payment")) { _,i->payment=if(i==0) "Cash" else "Manual QR Payment"; show("Checkout") }.show() } }) }
+            footer(if(checkout) "Place Order" else "Checkout Now") {
+                if(!checkout) navigate("Checkout") else {
+                    val value=table?.text.toString().trim()
+                    if(value.isEmpty()) { table?.error=if(pickup) "Pickup time is required" else "Table number is required"; table?.requestFocus() }
+                    else { orders.add(0,Order("MC-${145+orders.size}",if(pickup) "Pickup • $value" else "Dine-in • Table $value",total(),cart.sumOf { it.count },payment)); cart.clear(); navigate("Success") }
+                }
+            }
+        }; if(!checkout) nav("Home")
+    }
     private fun summary(parent: LinearLayout,label: String,value: String) { parent.addView(row().apply { addView(text(label,16f),LinearLayout.LayoutParams(0,-2,1f)); addView(text(value,16f,green,true)) }) }
     private class Icon(context: android.content.Context, val kind: String, val tint: Int): View(context) {
         override fun onDraw(c: Canvas) {
