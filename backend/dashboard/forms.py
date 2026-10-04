@@ -143,3 +143,13 @@ class ClientForm(forms.Form):
         user.is_active = is_active
         user.save()
         return user
+
+
+class RestockForm(forms.Form):
+    # Restock only ever adds; lowering a count (spoilage, a miscount) goes
+    # through Adjust, so a typo here can't silently wipe out stock.
+    quantity = forms.IntegerField(min_value=1, max_value=10000)
+
+
+class AdjustStockForm(forms.Form):
+    quantity = forms.IntegerField(min_value=0, max_value=100000)
