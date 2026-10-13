@@ -9,6 +9,29 @@ from django.db.models import Max
 from accounts.models import User
 from accounts.serializers import normalize_phone
 from menu.models import Category, ItemOption, MenuItem
+from payments.models import PaymentSettings
+
+MAX_IMAGE_BYTES = 2 * 1024 * 1024
+ALLOWED_IMAGE_FORMATS = {"PNG", "JPEG"}
+
+
+def validate_uploaded_image(image):
+    # Only a new upload carries .image (set by Pillow during validation);
+    # a file that's already saved needs no re-checking.
+    if image and hasattr(image, "image"):
+        if image.size > MAX_IMAGE_BYTES:
+            raise forms.ValidationError("Image must be 2 MB or smaller.")
+        if image.image.format not in ALLOWED_IMAGE_FORMATS:
+            raise forms.ValidationError("Image must be a PNG or JPG file.")
+    return image
+
+
+def delete_replaced_file(old_file, new_file):
+    # Django never deletes replaced files on its own; without this every
+    # re-upload would leave the old file behind in MEDIA_ROOT. on_commit
+    # waits for the surrounding transaction, so a rollback keeps the file.
+    if old_file and old_file.name != (new_file.name if new_file else None):
+        transaction.on_commit(lambda: old_file.delete(save=False))
 
 
 class StaffLoginForm(forms.Form):
@@ -191,9 +214,6 @@ class CategoryForm(forms.ModelForm):
 
 
 class MenuItemForm(forms.ModelForm):
-    MAX_IMAGE_BYTES = 2 * 1024 * 1024
-    ALLOWED_IMAGE_FORMATS = {"PNG", "JPEG"}
-
     price = forms.DecimalField(min_value=Decimal("0.01"), max_value=Decimal("9999.99"), decimal_places=2)
     stock = forms.IntegerField(min_value=0, max_value=100000)
     image = forms.ImageField(required=False, widget=forms.FileInput(attrs={"accept": "image/png,image/jpeg"}))
@@ -216,15 +236,7 @@ class MenuItemForm(forms.ModelForm):
         return self.cleaned_data["name"].strip()
 
     def clean_image(self):
-        image = self.cleaned_data.get("image")
-        # Only a new upload carries .image (set by Pillow during validation);
-        # the item's existing file needs no re-checking.
-        if image and hasattr(image, "image"):
-            if image.size > self.MAX_IMAGE_BYTES:
-                raise forms.ValidationError("Image must be 2 MB or smaller.")
-            if image.image.format not in self.ALLOWED_IMAGE_FORMATS:
-                raise forms.ValidationError("Image must be a PNG or JPG file.")
-        return image
+        return validate_uploaded_image(self.cleaned_data.get("image"))
 
     def clean(self):
         cleaned = super().clean()
@@ -246,12 +258,8 @@ class MenuItemForm(forms.ModelForm):
             self.instance.image = None
 
         item = super().save(commit=commit)
-
-        # Django never deletes replaced files on its own; without this every
-        # re-upload would leave the old image behind in MEDIA_ROOT. on_commit
-        # waits for the surrounding transaction, so a rollback keeps the file.
-        if commit and old_image and old_image.name != (item.image.name if item.image else None):
-            transaction.on_commit(lambda: old_image.delete(save=False))
+        if commit:
+            delete_replaced_file(old_image, item.image)
         return item
 
 
@@ -297,3 +305,45 @@ ItemOptionFormSet = forms.inlineformset_factory(
     max_num=10,
     validate_max=True,
 )
+
+
+class PaymentSettingsForm(forms.ModelForm):
+    qr_image = forms.ImageField(required=False, widget=forms.FileInput(attrs={"accept": "image/png,image/jpeg"}))
+
+    class Meta:
+        model = PaymentSettings
+        fields = [
+            "qr_enabled",
+            "qr_image",
+            "account_name",
+            "khr_account_number",
+            "usd_account_number",
+            "instructions",
+        ]
+        widgets = {
+            "account_name": forms.TextInput(attrs={"placeholder": "Name on the bank account"}),
+            "khr_account_number": forms.TextInput(attrs={"placeholder": "e.g. 600 863 042"}),
+            "usd_account_number": forms.TextInput(attrs={"placeholder": "e.g. 002 172 240"}),
+            "instructions": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean_qr_image(self):
+        return validate_uploaded_image(self.cleaned_data.get("qr_image"))
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("qr_enabled"):
+            # Customers would be offered a QR they can't use, so turning the
+            # method on needs the code itself and whose account it pays into.
+            if not cleaned.get("qr_image"):
+                self.add_error("qr_image", "Upload a QR code before turning on Manual QR payments.")
+            if not cleaned.get("account_name", "").strip():
+                self.add_error("account_name", "Enter the account holder name shown to customers.")
+        return cleaned
+
+    def save(self, commit=True):
+        old_image = PaymentSettings.objects.get(pk=self.instance.pk).qr_image if self.instance.pk else None
+        payment_settings = super().save(commit=commit)
+        if commit:
+            delete_replaced_file(old_image, payment_settings.qr_image)
+        return payment_settings
