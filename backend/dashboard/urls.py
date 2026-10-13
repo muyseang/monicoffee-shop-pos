@@ -31,4 +31,5 @@ urlpatterns = [
     path("stock/<int:pk>/adjust/", views.stock_adjust, name="stock-adjust"),
     path("stock/<int:pk>/show/", views.stock_set_visible, {"visible": True}, name="stock-show"),
     path("stock/<int:pk>/hide/", views.stock_set_visible, {"visible": False}, name="stock-hide"),
+    path("settings/", views.payment_settings, name="settings"),
 ]

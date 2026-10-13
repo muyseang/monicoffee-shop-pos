@@ -62,6 +62,12 @@
             </div>
           </div>
         </div>
+        {% if user.role == "super_admin" %}
+          <a class="nav-item {% block nav_settings_active %}{% endblock %}" href="{% url 'dashboard:settings' %}">
+            <span>Settings <span class="nav-badge">Owner</span></span>
+            <img src="{% static 'dashboard/icons/settings.svg' %}" width="20" height="20" alt="">
+          </a>
+        {% endif %}
       {% endif %}
     </aside>
 
