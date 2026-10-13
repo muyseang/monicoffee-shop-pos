@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import User
 from menu.models import Category, MenuItem
+from payments.models import PaymentSettings
 
 from .decorators import super_admin_required
 from .forms import (
@@ -16,6 +17,7 @@ from .forms import (
     ClientForm,
     ItemOptionFormSet,
     MenuItemForm,
+    PaymentSettingsForm,
     RestockForm,
     StaffForm,
     StaffLoginForm,
@@ -429,3 +431,25 @@ def menu_item_delete(request, pk):
         messages.success(request, f"{item.name} deleted.")
 
     return redirect("dashboard:menu-item-list")
+
+
+# Settings decide where customers' money goes, so they're Owner only.
+
+
+@super_admin_required
+def payment_settings(request):
+    instance = PaymentSettings.load()
+
+    if request.method == "POST":
+        form = PaymentSettingsForm(request.POST, request.FILES, instance=instance)
+        if form.is_valid():
+            with transaction.atomic():
+                form.save()
+            messages.success(request, "Payment settings saved.")
+            return redirect("dashboard:settings")
+    else:
+        form = PaymentSettingsForm(instance=instance)
+
+    # A rejected POST has already copied its unsaved upload onto `instance`,
+    # so show the current QR from a fresh read of the saved row.
+    return render(request, "dashboard/settings.html", {"form": form, "saved": PaymentSettings.load()})
