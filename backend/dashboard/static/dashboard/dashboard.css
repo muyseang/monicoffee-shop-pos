@@ -8,6 +8,10 @@
   --bg: #f7f8f7;
   --danger: #c0392b;
   --danger-soft: #fdecea;
+  --surface-muted: #f7f7f5;
+  --placeholder: #e5e5e0;
+  --warning-soft: #fef1cc;
+  --warning: #8c6105;
 }
 
 * { box-sizing: border-box; }
@@ -123,6 +127,8 @@ a { color: inherit; text-decoration: none; }
 .btn-block { width: 100%; }
 .btn-secondary { background: var(--border); color: var(--text); }
 .btn-danger { background: var(--danger); color: #fff; }
+.btn-ghost { background: #f2f2f2; color: var(--text); }
+.btn-ghost:hover { background: var(--border); }
 
 .hint { color: var(--muted); font-size: 0.85rem; margin-top: 16px; }
 
@@ -475,7 +481,84 @@ tr:last-child td { border-bottom: none; }
   font-size: 0.9rem;
 }
 
+/* ---------- Settings ---------- */
+
+.method-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.method-row + .method-row { border-top: 1px solid var(--border); }
+.method-row:first-of-type { padding-top: 0; }
+.method-row:last-child { padding-bottom: 0; }
+.method-name { font-weight: 700; color: var(--muted); }
+.method-status { color: var(--green); font-weight: 700; font-size: 0.85rem; }
+
+.qr-upload {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.qr-box {
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
+  background: var(--placeholder);
+  overflow: hidden;
+}
+
+.qr-box img,
+.preview-qr img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.qr-caption { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 10px; }
+.qr-help { margin: 0 0 16px; line-height: 1.5; }
+.qr-upload-btn { width: 200px; margin-bottom: 8px; }
+
+/* The real file input is reached through its <label> button. */
+.qr-upload input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.qr-upload input[type="file"]:focus-visible + .qr-upload-btn { outline: 2px solid var(--green); outline-offset: 2px; }
+
+.checkout-preview {
+  background: var(--surface-muted);
+  border-radius: 12px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.brand-mark-sm { width: 28px; height: 28px; font-size: 0.95rem; }
+.preview-shop { font-weight: 700; font-size: 0.85rem; margin-top: 6px; }
+.preview-title { font-weight: 700; color: var(--muted); margin: 14px 0 12px; }
+
+.preview-qr {
+  width: 140px;
+  height: 140px;
+  border-radius: 8px;
+  background: var(--placeholder);
+  overflow: hidden;
+}
+
+.preview-name { font-weight: 700; color: var(--muted); font-size: 0.8rem; margin-top: 12px; min-height: 1em; }
+.preview-accounts { color: #80807a; font-size: 0.75rem; margin-top: 4px; }
+.preview-instructions { color: var(--muted); font-size: 0.75rem; margin: 12px 0 14px; max-width: 286px; }
+
+.status-pill {
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 5px 16px;
+  border-radius: 999px;
+}
+
 @media (max-width: 860px) {
+  .qr-upload { grid-template-columns: 1fr; }
   .login-screen { flex-direction: column; }
   .shell { flex-direction: column; }
   .sidebar { width: auto; flex-direction: row; overflow-x: auto; }

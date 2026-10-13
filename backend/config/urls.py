@@ -8,9 +8,10 @@ urlpatterns = [
     path("", RedirectView.as_view(pattern_name="dashboard:login", permanent=False)),
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
+    path("api/payments/", include("payments.urls")),
     path("dashboard/", include("dashboard.urls")),
 ]
 
-# Uploaded menu images. static() only adds this route while DEBUG is on;
+# Uploaded menu images and payment QR codes. static() only adds this route while DEBUG is on;
 # a production server serves MEDIA_ROOT itself.
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
