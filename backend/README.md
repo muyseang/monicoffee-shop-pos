@@ -22,7 +22,8 @@ Requirements: Python 3.12 (3.11+), MySQL 8.0 (confirm your exact versions and wr
    ```
 5. Copy `.env.example` to `.env` and set `DB_PASSWORD` (and a real `SECRET_KEY`)
 6. Create tables: `python manage.py migrate`
-7. Load demo data: `python manage.py seed_demo`
+7. Load demo data: `python manage.py seed_demo` (demo logins + 23 menu items with photos — credits in `menu/demo_photos/CREDITS.md`).
+   On a database you already use, `python manage.py seed_demo --menu-only` only adds missing items and images — it never changes existing items or accounts.
 8. Start the server: `python manage.py runserver`
 9. Open http://127.0.0.1:8000/admin/ and log in with `admin` / `Admin@12345`
 
