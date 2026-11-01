@@ -1,0 +1,40 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Receipt #{{ order.number }} — Moni Coffee{% endblock %}
+{% block nav_pos_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>POS &middot; Receipt</h1>
+      <p>Order created successfully</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <div class="receipt-wrap">
+    <div class="panel receipt">
+      <h2>Moni Coffee</h2>
+      <div class="receipt-number">Order #{{ order.number }}</div>
+      <div class="cell-sub">
+        {{ placed_label|capfirst }} &middot; {{ order.get_order_type_display }}{% if order.order_type == "dine_in" %} &middot; Table {{ order.table_number }}{% endif %}
+      </div>
+      <div class="cart-divider"></div>
+      {% for line in items %}
+        <div class="summary-row"><span>{{ line.name }} x{{ line.quantity }}</span><span>${{ line.line_total|floatformat:2 }}</span></div>
+      {% endfor %}
+      <div class="cart-divider"></div>
+      <div class="summary-row">
+        <span>Payment</span>
+        <strong>{{ order.get_payment_method_display }}{% if order.payment_method == "manual_qr" %} &middot; {{ order.get_payment_status_display }}{% endif %}</strong>
+      </div>
+      <div class="cart-total"><span>Total</span><strong>${{ order.total|floatformat:2 }}</strong></div>
+      <span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
+      <div class="cell-sub">Thank you for visiting Moni Coffee</div>
+    </div>
+    <div class="receipt-actions">
+      <a class="btn btn-outline" href="{% url 'dashboard:order-detail' order.pk %}">View Order</a>
+      <a class="btn btn-primary" href="{% url 'dashboard:pos' %}">New Order</a>
+    </div>
+  </div>
+{% endblock %}

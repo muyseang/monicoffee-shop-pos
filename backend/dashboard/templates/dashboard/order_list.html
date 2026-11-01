@@ -1,0 +1,73 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Orders — Moni Coffee{% endblock %}
+{% block nav_orders_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Orders</h1>
+      <p>Incoming orders &middot; auto-refreshes every 15 seconds</p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <form class="toolbar" method="get" id="order-filters">
+    <div class="field" style="flex:0 1 320px">
+      <label for="q">Search</label>
+      <input type="search" id="q" name="q" value="{{ query }}" placeholder="Order number or client name" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="date">Date</label>
+      <select id="date" name="date" onchange="this.form.submit()">
+        {% for value, label in date_ranges.items %}
+          <option value="{{ value }}" {% if date_range == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="status">Status</label>
+      <select id="status" name="status" onchange="this.form.submit()">
+        <option value="" {% if not status %}selected{% endif %}>All statuses</option>
+        {% for value, label in statuses %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="type">Type</label>
+      <select id="type" name="type" onchange="this.form.submit()">
+        <option value="" {% if not order_type %}selected{% endif %}>All types</option>
+        {% for value, label in order_types %}
+          <option value="{{ value }}" {% if order_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <div class="live-pill">
+      <img src="{% static 'dashboard/icons/live-dot.svg' %}" width="8" height="8" alt="">
+      Live &middot; every 15s
+    </div>
+  </form>
+
+  <div class="card" id="order-table">
+    {% include "dashboard/_order_table.html" %}
+  </div>
+
+  <script>
+    // Swap in a fresh copy of the table every 15 seconds, with the filters
+    // currently in the URL. Skipped while the tab is hidden.
+    setInterval(async () => {
+      if (document.hidden) return;
+      const params = new URLSearchParams(window.location.search);
+      params.set('partial', '1');
+      try {
+        const response = await fetch('?' + params.toString(), { headers: { 'X-Requested-With': 'fetch' } });
+        if (response.ok) document.getElementById('order-table').innerHTML = await response.text();
+      } catch (error) {
+        // Offline for a moment — the next tick tries again.
+      }
+    }, 15000);
+  </script>
+{% endblock %}

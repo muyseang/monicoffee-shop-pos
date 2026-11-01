@@ -1,0 +1,261 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}POS — Moni Coffee{% endblock %}
+{% block nav_pos_active %}active{% endblock %}
+
+{% block content %}
+  <form method="post" id="pos-form" novalidate>
+    {% csrf_token %}
+    <div class="page-header">
+      <div>
+        <h1 id="pos-title">POS</h1>
+        <p id="pos-subtitle">Create an order for a walk-in customer</p>
+      </div>
+      <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+    </div>
+
+    <div class="pos-layout">
+      <div>
+        {# Step 1 — pick items #}
+        <section data-step="select">
+          <div class="chip-row" role="tablist" aria-label="Categories">
+            <button type="button" class="chip active" data-category="">All</button>
+            {% for category in categories %}
+              <button type="button" class="chip" data-category="{{ category.pk }}">{{ category.name }}</button>
+            {% endfor %}
+          </div>
+          <div class="product-grid">
+            {% for item in items %}
+              <div class="product-card{% if not item.in_stock %} is-unavailable{% endif %}" data-category="{{ item.category_id }}">
+                <div class="product-image">{% if item.image %}<img src="{{ item.image.url }}" alt="">{% endif %}</div>
+                <div class="product-name">{{ item.name }}</div>
+                <div class="product-meta">
+                  <span class="product-price">${{ item.price|floatformat:2 }}</span>
+                  {% if item.in_stock %}
+                    <span class="cell-sub" data-left="{{ item.pk }}">{{ item.stock }} left</span>
+                  {% else %}
+                    <span class="badge badge-danger">Out of Stock</span>
+                  {% endif %}
+                </div>
+                {% if item.in_stock %}
+                  <button type="button" class="btn btn-outline btn-block" data-add="{{ item.pk }}">Add</button>
+                {% else %}
+                  <button type="button" class="btn btn-ghost btn-block" disabled>Unavailable</button>
+                {% endif %}
+              </div>
+            {% empty %}
+              <p class="cell-sub">No menu items yet. Add some under Menu Items.</p>
+            {% endfor %}
+          </div>
+        </section>
+
+        {# Step 2 — checkout details #}
+        <section data-step="checkout" hidden>
+          <div class="panel" id="order-type-checkout-slot">
+            <h3>Order type</h3>
+          </div>
+
+          <div class="panel">
+            <h3>Customer (optional)</h3>
+            <div class="field" style="margin-bottom:8px">
+              <label for="pos-client">Link to a client account</label>
+              <input type="search" id="pos-client" name="client" list="client-options" value="{{ form_values.client|default:'' }}" placeholder="Search client by name or phone" autocomplete="off">
+              <datalist id="client-options">
+                {% for client in clients %}
+                  <option value="{{ client.phone }}">{{ client.first_name|default:client.username }}</option>
+                {% endfor %}
+              </datalist>
+            </div>
+            <div class="cell-sub">Leave empty for a walk-in customer without an account.</div>
+          </div>
+
+          <div class="panel">
+            <h3>Payment method</h3>
+            <div class="method-options">
+              <label class="method-option">
+                <input type="radio" name="payment_method" value="cash" {% if form_values.payment_method != "manual_qr" %}checked{% endif %}>
+                <img class="radio-on" src="{% static 'dashboard/icons/radio-on.svg' %}" width="18" height="18" alt="">
+                <img class="radio-off" src="{% static 'dashboard/icons/radio-off.svg' %}" width="18" height="18" alt="">
+                <span><strong>Cash</strong><span class="cell-sub">Customer pays at the counter</span></span>
+              </label>
+              <label class="method-option{% if not qr_available %} is-disabled{% endif %}">
+                <input type="radio" name="payment_method" value="manual_qr" {% if form_values.payment_method == "manual_qr" and qr_available %}checked{% endif %} {% if not qr_available %}disabled{% endif %}>
+                <img class="radio-on" src="{% static 'dashboard/icons/radio-on.svg' %}" width="18" height="18" alt="">
+                <img class="radio-off" src="{% static 'dashboard/icons/radio-off.svg' %}" width="18" height="18" alt="">
+                <span>
+                  <strong>Manual QR</strong>
+                  <span class="cell-sub">{% if qr_available %}Customer scans the QR, staff confirms{% else %}Turned off — set it up in Settings{% endif %}</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="panel pos-cart">
+        <h3 id="cart-title">Current Order</h3>
+
+        <div id="order-type-select-slot">
+          <div id="order-type-block">
+            <div class="segmented">
+              <label><input type="radio" name="order_type" value="dine_in" {% if form_values.order_type != "pickup" %}checked{% endif %}><span>Dine-in</span></label>
+              <label><input type="radio" name="order_type" value="pickup" {% if form_values.order_type == "pickup" %}checked{% endif %}><span>Pickup</span></label>
+            </div>
+            <div class="field" id="table-field">
+              <label for="pos-table">Table number *</label>
+              <input type="text" id="pos-table" name="table_number" maxlength="20" value="{{ form_values.table_number|default:'' }}" placeholder="e.g. 5">
+              <div class="field-error" id="table-error" hidden>Table number is required for dine-in orders.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cart-lines"></div>
+        <p class="cell-sub" id="cart-empty">No items yet. Tap Add on a menu item.</p>
+        <div class="cart-divider"></div>
+        <div class="cart-total"><span>Total</span><strong id="cart-total">$0.00</strong></div>
+
+        <div data-step="select">
+          <button type="button" class="btn btn-primary btn-block" id="to-checkout" disabled>Checkout</button>
+        </div>
+        <div data-step="checkout" hidden class="cart-actions">
+          <button type="submit" class="btn btn-primary btn-block">Confirm Order</button>
+          <button type="button" class="btn btn-ghost btn-block" id="back-to-items">Back to items</button>
+        </div>
+        <div id="cart-inputs"></div>
+      </aside>
+    </div>
+  </form>
+
+  {{ initial_cart|json_script:"initial-cart" }}
+  {{ menu_data|json_script:"menu-data" }}
+
+  <script>
+    const menu = JSON.parse(document.getElementById('menu-data').textContent);
+    const cart = new Map();  // menu item id -> quantity, in the order items were added
+    JSON.parse(document.getElementById('initial-cart').textContent).forEach((line) => {
+      if (menu[line.id]) cart.set(String(line.id), Math.min(line.qty, menu[line.id].stock));
+    });
+
+    const money = (value) => '$' + value.toFixed(2);
+    let step = 'select';
+
+    function renderCart() {
+      const lines = document.getElementById('cart-lines');
+      lines.innerHTML = '';
+      let total = 0;
+      cart.forEach((qty, id) => {
+        const item = menu[id];
+        total += item.price * qty;
+        const row = document.createElement('div');
+        row.className = 'cart-line';
+        row.innerHTML = step === 'select'
+          ? `<div><div class="cell-name"></div><div class="qty-stepper">
+               <button type="button" aria-label="Remove one">−</button><span class="cell-sub">x${qty}</span>
+               <button type="button" aria-label="Add one">+</button></div></div><strong></strong>`
+          : `<span class="cell-sub"></span><strong></strong>`;
+        row.querySelector(step === 'select' ? '.cell-name' : '.cell-sub').textContent =
+          step === 'select' ? item.name : `${item.name} x${qty}`;
+        row.querySelector('strong').textContent = money(item.price * qty);
+        if (step === 'select') {
+          const [minus, plus] = row.querySelectorAll('button');
+          minus.addEventListener('click', () => changeQty(id, -1));
+          plus.addEventListener('click', () => changeQty(id, 1));
+          plus.disabled = qty >= item.stock;
+        }
+        lines.appendChild(row);
+      });
+      document.getElementById('cart-total').textContent = money(total);
+      document.getElementById('cart-empty').hidden = cart.size > 0;
+      document.getElementById('to-checkout').disabled = cart.size === 0;
+
+      // "N left" counts down as items go into the cart.
+      document.querySelectorAll('[data-left]').forEach((label) => {
+        const id = label.dataset.left;
+        const left = menu[id].stock - (cart.get(id) || 0);
+        label.textContent = left + ' left';
+        document.querySelector(`[data-add="${id}"]`).disabled = left <= 0;
+      });
+
+      const inputs = document.getElementById('cart-inputs');
+      inputs.innerHTML = '';
+      cart.forEach((qty, id) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'item';
+        input.value = `${id}:${qty}`;
+        inputs.appendChild(input);
+      });
+    }
+
+    function changeQty(id, delta) {
+      const qty = (cart.get(id) || 0) + delta;
+      if (qty <= 0) cart.delete(id);
+      else if (qty <= menu[id].stock) cart.set(id, qty);
+      renderCart();
+    }
+
+    document.querySelectorAll('[data-add]').forEach((button) => {
+      button.addEventListener('click', () => changeQty(button.dataset.add, 1));
+    });
+
+    // Category chips filter the grid in place.
+    document.querySelectorAll('.chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach((other) => other.classList.toggle('active', other === chip));
+        document.querySelectorAll('.product-card').forEach((card) => {
+          card.hidden = chip.dataset.category !== '' && card.dataset.category !== chip.dataset.category;
+        });
+      });
+    });
+
+    // Table number only applies to dine-in.
+    const tableField = document.getElementById('table-field');
+    const tableInput = document.getElementById('pos-table');
+    const tableError = document.getElementById('table-error');
+    function syncOrderType() {
+      const dineIn = document.querySelector('input[name="order_type"]:checked').value === 'dine_in';
+      tableField.hidden = !dineIn;
+      if (!dineIn) tableError.hidden = true;
+    }
+    document.querySelectorAll('input[name="order_type"]').forEach((radio) => radio.addEventListener('change', syncOrderType));
+    tableInput.addEventListener('input', () => { tableError.hidden = true; tableInput.classList.remove('is-invalid'); });
+    function tableMissing() {
+      const dineIn = document.querySelector('input[name="order_type"]:checked').value === 'dine_in';
+      if (dineIn && !tableInput.value.trim()) {
+        tableError.hidden = false;
+        tableInput.classList.add('is-invalid');
+        tableInput.focus();
+        return true;
+      }
+      return false;
+    }
+
+    const titles = {
+      select: ['POS', 'Create an order for a walk-in customer', 'Current Order', 'order-type-select-slot'],
+      checkout: ['POS · Checkout', 'Confirm the walk-in order', 'Order Summary', 'order-type-checkout-slot'],
+    };
+    function showStep(next) {
+      step = next;
+      document.querySelectorAll('[data-step]').forEach((el) => { el.hidden = el.dataset.step !== step; });
+      const [title, subtitle, cartTitle, slot] = titles[step];
+      document.getElementById('pos-title').textContent = title;
+      document.getElementById('pos-subtitle').textContent = subtitle;
+      document.getElementById('cart-title').textContent = cartTitle;
+      // One set of order-type inputs, moved between the two layouts.
+      document.getElementById(slot).appendChild(document.getElementById('order-type-block'));
+      renderCart();
+    }
+
+    document.getElementById('to-checkout').addEventListener('click', () => {
+      if (!tableMissing()) showStep('checkout');
+    });
+    document.getElementById('back-to-items').addEventListener('click', () => showStep('select'));
+    document.getElementById('pos-form').addEventListener('submit', (event) => {
+      if (cart.size === 0 || tableMissing()) event.preventDefault();
+    });
+
+    syncOrderType();
+    showStep({% if show_checkout and initial_cart %}'checkout'{% else %}'select'{% endif %});
+  </script>
+{% endblock %}
