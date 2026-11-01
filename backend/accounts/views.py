@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
@@ -7,7 +9,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import PhoneVerification, User
+from .permissions import IsClient
 from .serializers import (
+    ClientProfileSerializer,
     ClientSerializer,
     LoginRequestSerializer,
     RegisterRequestSerializer,
@@ -196,6 +200,11 @@ class LoginVerifyOTPView(APIView):
 
 
 def _status_response(request_id, purpose):
+    try:
+        request_id = uuid.UUID(request_id)
+    except ValueError:
+        # Without this, filtering on a malformed id raises a ValidationError → HTTP 500.
+        return Response({"detail": "request_id is not valid."}, status=status.HTTP_400_BAD_REQUEST)
     otp = PhoneVerification.objects.filter(request_id=request_id, purpose=purpose).first()
     if not otp:
         return Response({"detail": "Unknown request_id."}, status=status.HTTP_404_NOT_FOUND)
@@ -248,3 +257,18 @@ class LogoutView(APIView):
     def post(self, request):
         Token.objects.filter(user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MeView(APIView):
+    """The logged-in client's own profile — design 33-Personal Info."""
+
+    permission_classes = [IsClient]
+
+    def get(self, request):
+        return Response(ClientProfileSerializer(request.user).data)
+
+    def patch(self, request):
+        serializer = ClientProfileSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
