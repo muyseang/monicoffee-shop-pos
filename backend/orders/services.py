@@ -1,6 +1,8 @@
 """Every change to an order goes through here, so stock and status stay in step
 no matter who makes the change (POS, dashboard, or later the mobile app API)."""
 
+from decimal import Decimal
+
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
@@ -16,19 +18,31 @@ class OrderError(Exception):
 
 
 @transaction.atomic
-def place_order(*, lines, order_type, payment_method, source, table_number="", client=None, created_by=None):
+def place_order(
+    *, lines, order_type, payment_method, source, table_number="", pickup_time=None, client=None, created_by=None
+):
     """Create an order and deduct its stock.
 
-    `lines` is a list of (menu_item_id, quantity). The menu rows are locked
-    until the transaction ends, so two tills selling the last croissant at the
-    same moment can't both succeed.
+    `lines` is a list of (menu_item_id, quantity), optionally followed by an
+    options label and the options' extra price per unit — the app sends e.g.
+    (7, 1, "Size: Medium · Extra Shot", Decimal("0.50")). Lines for the same
+    item with the same options are merged; different options stay separate.
+    The menu rows are locked until the transaction ends, so two tills selling
+    the last croissant at the same moment can't both succeed.
     """
-    quantities = {}
-    for item_id, quantity in lines:
+    merged = {}
+    for item_id, quantity, *extras in lines:
+        options, extra_price = (list(extras) + ["", Decimal("0")])[:2]
         if quantity > 0:
-            quantities[item_id] = quantities.get(item_id, 0) + quantity
-    if not quantities:
+            key = (item_id, options, extra_price)
+            merged[key] = merged.get(key, 0) + quantity
+    if not merged:
         raise OrderError("Add at least one item to the order.")
+
+    # Stock is per menu item, whatever the options: check the combined amount.
+    quantities = {}
+    for (item_id, _, _), quantity in merged.items():
+        quantities[item_id] = quantities.get(item_id, 0) + quantity
 
     if order_type == Order.OrderType.DINE_IN and not table_number.strip():
         raise OrderError("Table number is required for dine-in orders.")
@@ -51,18 +65,22 @@ def place_order(*, lines, order_type, payment_method, source, table_number="", c
         source=source,
         order_type=order_type,
         table_number=table_number.strip() if order_type == Order.OrderType.DINE_IN else "",
+        pickup_time=pickup_time if order_type == Order.OrderType.PICKUP else None,
         payment_method=payment_method,
         payment_status=(
             Order.PaymentStatus.AWAITING
             if payment_method == Order.PaymentMethod.MANUAL_QR
             else Order.PaymentStatus.NOT_PAID
         ),
-        total=sum(menu_items[item_id].price * quantity for item_id, quantity in quantities.items()),
+        total=sum(
+            (menu_items[item_id].price + extra_price) * quantity
+            for (item_id, _, extra_price), quantity in merged.items()
+        ),
     )
     OrderItem.objects.bulk_create(
         OrderItem(order=order, menu_item=menu_items[item_id], name=menu_items[item_id].name,
-                  unit_price=menu_items[item_id].price, quantity=quantity)
-        for item_id, quantity in quantities.items()
+                  unit_price=menu_items[item_id].price + extra_price, quantity=quantity, options=options)
+        for (item_id, options, extra_price), quantity in merged.items()
     )
     for item_id, quantity in quantities.items():
         MenuItem.objects.filter(pk=item_id).update(stock=F("stock") - quantity)
