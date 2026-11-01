@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "accounts",
     "menu",
     "payments",
+    "orders",
     "dashboard",
 ]
 
