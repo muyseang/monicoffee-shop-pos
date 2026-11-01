@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan to Pay — Moni Coffee</title>
+  <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+</head>
+<body class="customer-display">
+  {# Turned toward the customer, so there's no dashboard chrome — only the staff bar at the bottom. #}
+  <main class="pay-screen">
+    <div class="pay-brand"><div class="brand-mark">M</div> Moni Coffee</div>
+    <h1>Scan to Pay</h1>
+    <div class="cell-sub">Total to pay</div>
+    <div class="pay-amount">${{ order.total|floatformat:2 }}</div>
+    <div class="cell-sub">Order #{{ order.number }}</div>
+
+    <div class="pay-qr">
+      {% if payment_settings.qr_image %}<img src="{{ payment_settings.qr_image.url }}" alt="Payment QR code">{% endif %}
+    </div>
+
+    <div class="status-pill status-pill-lg">
+      <img src="{% static 'dashboard/icons/waiting-dot.svg' %}" width="8" height="8" alt="">
+      Waiting for staff confirmation
+    </div>
+    <p class="pay-instructions">{{ payment_settings.instructions }}</p>
+    <p class="pay-accounts">
+      {{ payment_settings.account_name }}
+      {% if payment_settings.khr_account_number %}&nbsp;&middot;&nbsp; KHR {{ payment_settings.khr_account_number }}{% endif %}
+      {% if payment_settings.usd_account_number %}&nbsp;&middot;&nbsp; USD {{ payment_settings.usd_account_number }}{% endif %}
+    </p>
+  </main>
+
+  <footer class="staff-bar">
+    <span class="staff-label">Staff only</span>
+    <div class="toolbar-spacer"></div>
+    <form method="post" action="{% url 'dashboard:pos-cancel' order.pk %}" onsubmit="return confirm('Cancel order #{{ order.number }}? Its stock will be returned.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost" style="width:150px">Cancel</button>
+    </form>
+    <form method="post" action="{% url 'dashboard:pos-confirm-payment' order.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary" style="width:240px">Confirm Payment Received</button>
+    </form>
+  </footer>
+</body>
+</html>

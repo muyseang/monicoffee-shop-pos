@@ -1,0 +1,45 @@
+<table class="order-table">
+  <thead>
+    <tr>
+      <th>Order #</th>
+      <th>Client</th>
+      <th>Type</th>
+      <th>Items</th>
+      <th>Total</th>
+      <th>Payment</th>
+      <th>Status</th>
+      <th>Time</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+      <tr>
+        <td class="cell-name">#{{ order.number }}</td>
+        <td>
+          {% if order.client %}
+            <div class="cell-name">{{ order.client.first_name|default:order.client.username }}</div>
+            <div class="cell-sub">{{ order.client.phone|default:"—" }}</div>
+          {% else %}
+            <div class="cell-name">Walk-in</div>
+            <div class="cell-sub">POS order</div>
+          {% endif %}
+        </td>
+        <td>
+          <div class="cell-name">{{ order.get_order_type_display }}</div>
+          <div class="cell-sub">
+            {% if order.order_type == "dine_in" %}Table {{ order.table_number }}{% elif order.pickup_time %}{{ order.pickup_time|time:"h:i A" }}{% else %}Walk-in{% endif %}
+          </div>
+        </td>
+        <td>{% with count=order.item_count|default:0 %}{{ count }} item{{ count|pluralize }}{% endwith %}</td>
+        <td class="cell-name">${{ order.total|floatformat:2 }}</td>
+        <td><span class="badge badge-{{ order.payment_method }}">{{ order.get_payment_method_display }}</span></td>
+        <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+        <td>{{ order.created_at|time:"H:i" }}</td>
+        <td><a class="action-link primary" href="{% url 'dashboard:order-detail' order.pk %}">View</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9" class="cell-sub">No orders match these filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

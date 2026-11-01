@@ -1,0 +1,176 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Order #{{ order.number }} — Moni Coffee{% endblock %}
+{% block nav_orders_active %}active{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Order Detail</h1>
+      <p>
+        {% if order.status == "pending" %}Review, accept or reject this order
+        {% elif order.status == "rejected" %}This order was rejected
+        {% elif order.status == "cancelled" %}This order was cancelled
+        {% elif order.status == "completed" %}This order is complete
+        {% else %}Move this order along as it's prepared{% endif %}
+      </p>
+    </div>
+    <div class="role-tag">{% if user.role == "super_admin" %}Owner &middot; Super Admin{% else %}Staff{% endif %}</div>
+  </div>
+
+  <div class="order-header">
+    <a class="action-link primary" href="{% url 'dashboard:order-list' %}">&larr; Orders</a>
+    <span class="breadcrumb-sep">/</span>
+    <h2>Order #{{ order.number }}</h2>
+    <span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
+    <span class="cell-sub">Placed {{ placed_label }}{% if rejected_time %} &middot; Rejected {{ rejected_time|time:"H:i" }}{% endif %}</span>
+    <div class="toolbar-spacer"></div>
+    {% if order.status == "pending" %}
+      <button type="button" class="btn btn-danger" id="open-reject">Reject</button>
+    {% endif %}
+    {% if advance_label %}
+      <form method="post" action="{% url 'dashboard:order-advance' order.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="from" value="{{ order.status }}">
+        <button type="submit" class="btn btn-primary">{{ advance_label }}</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="panel stepper">
+    {% for step in steps %}
+      {% if not forloop.first %}<div class="step-line step-line-{{ step.state }}"></div>{% endif %}
+      <div class="step step-{{ step.state }}">
+        {% if step.state == "current" %}
+          <img src="{% static 'dashboard/icons/step-current.svg' %}" width="28" height="28" alt="">
+        {% elif step.state == "done" %}
+          <span class="step-dot"><img src="{% static 'dashboard/icons/step-check.svg' %}" width="14" height="14" alt=""></span>
+        {% elif step.state == "stopped" %}
+          <span class="step-dot"><img src="{% static 'dashboard/icons/step-x.svg' %}" width="14" height="14" alt=""></span>
+        {% else %}
+          <span class="step-dot"></span>
+        {% endif %}
+        {{ step.label }}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if order.status == "rejected" %}
+    <div class="rejection-card">
+      <div class="rejection-title">Reason for rejection</div>
+      <p>{{ order.rejection_reason }}</p>
+      <div class="cell-sub">Stock for the {{ item_count }} item{{ item_count|pluralize }} was returned automatically.</div>
+    </div>
+  {% endif %}
+
+  <div class="detail-layout">
+    <div class="panel">
+      <h3>Order Items</h3>
+      <table class="items-table">
+        <thead>
+          <tr><th>Item</th><th>Options</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          {% for line in items %}
+            <tr>
+              <td class="cell-name">{{ line.name }}</td>
+              <td>{{ line.options|default:"—" }}</td>
+              <td>{{ line.quantity }}</td>
+              <td>${{ line.unit_price|floatformat:2 }}</td>
+              <td class="cell-name">${{ line.line_total|floatformat:2 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="summary-row"><span>Subtotal</span><span>${{ order.total|floatformat:2 }}</span></div>
+      <div class="summary-row"><span>Total</span><strong>${{ order.total|floatformat:2 }}</strong></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h3>Customer</h3>
+        <div class="summary-row"><span>Name</span><strong>{% if order.client %}{{ order.client.first_name|default:order.client.username }}{% else %}Walk-in{% endif %}</strong></div>
+        <div class="summary-row"><span>Phone</span><span>{{ order.client.phone|default:"—" }}</span></div>
+        <div class="summary-row"><span>Order type</span><span>{{ order.get_order_type_display }}</span></div>
+        {% if order.order_type == "dine_in" %}
+          <div class="summary-row"><span>Table number</span><strong>Table {{ order.table_number }}</strong></div>
+        {% else %}
+          <div class="summary-row"><span>Pickup time</span><strong>{% if order.pickup_time %}{{ order.pickup_time|time:"h:i A" }}{% else %}—{% endif %}</strong></div>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3>Payment</h3>
+        <div class="summary-row"><span>Method</span><span class="badge badge-{{ order.payment_method }}">{{ order.get_payment_method_display }}</span></div>
+        {% if order.status != "rejected" %}
+          <div class="summary-row"><span>Amount</span><strong>${{ order.total|floatformat:2 }}</strong></div>
+        {% endif %}
+        <div class="summary-row"><span>Payment status</span><span>{{ order.payment_status_label }}</span></div>
+        {% if order.payment_proof %}
+          <div class="summary-row">
+            <span>Payment Screenshot</span>
+            <a class="action-link primary" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener" style="margin-right:0">View Full Size</a>
+          </div>
+          <a class="proof-thumb" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener">
+            <img src="{% static 'dashboard/icons/image.svg' %}" width="32" height="32" alt="">
+            <strong>{{ order.payment_proof.name|cut:"payment_proofs/" }}</strong>
+            <span class="cell-sub">{{ order.payment_proof.size|filesizeformat }}</span>
+          </a>
+        {% endif %}
+        {% if order.can_confirm_payment %}
+          <form method="post" action="{% url 'dashboard:order-confirm-payment' order.pk %}" style="margin-top:16px">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline btn-block">Confirm QR Payment</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if order.status == "pending" %}
+    <div id="reject-modal" class="modal-overlay" hidden>
+      <div class="modal-card modal-card-wide">
+        <h3>Reject order #{{ order.number }}?</h3>
+        <p>The customer will see your reason. Stock for this order will be returned automatically.</p>
+        <form method="post" action="{% url 'dashboard:order-reject' order.pk %}" id="reject-form" novalidate>
+          {% csrf_token %}
+          <div class="field">
+            <label for="reject-reason">Reason (required)</label>
+            <textarea id="reject-reason" name="reason" rows="3" maxlength="500" placeholder="e.g. Out of oat milk today"></textarea>
+            <div class="field-error" id="reject-error" hidden>A reason is required to reject an order.</div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+            <button type="submit" class="btn btn-danger">Reject Order</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const rejectModal = document.getElementById('reject-modal');
+      const reason = document.getElementById('reject-reason');
+      const reasonError = document.getElementById('reject-error');
+
+      document.getElementById('open-reject').addEventListener('click', () => {
+        rejectModal.hidden = false;
+        reason.focus();
+      });
+      rejectModal.querySelector('[data-close]').addEventListener('click', () => { rejectModal.hidden = true; });
+      reason.addEventListener('input', () => {
+        reasonError.hidden = true;
+        reason.classList.remove('is-invalid');
+      });
+      // The server checks too; this just answers straight away.
+      document.getElementById('reject-form').addEventListener('submit', (event) => {
+        if (!reason.value.trim()) {
+          event.preventDefault();
+          reasonError.hidden = false;
+          reason.classList.add('is-invalid');
+          reason.focus();
+        }
+      });
+    </script>
+  {% endif %}
+{% endblock %}

@@ -19,8 +19,13 @@
       </div>
 
       <div class="nav-label">Operations</div>
-      <div class="nav-item disabled">Orders</div>
-      <div class="nav-item disabled">POS</div>
+      {% if user.is_authenticated %}
+        <a class="nav-item {% block nav_orders_active %}{% endblock %}" href="{% url 'dashboard:order-list' %}">Orders</a>
+        <a class="nav-item {% block nav_pos_active %}{% endblock %}" href="{% url 'dashboard:pos' %}">POS</a>
+      {% else %}
+        <div class="nav-item disabled">Orders</div>
+        <div class="nav-item disabled">POS</div>
+      {% endif %}
 
       <div class="nav-label">Catalog</div>
       {% if user.is_authenticated %}
