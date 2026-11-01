@@ -1,13 +1,20 @@
+import re
+from datetime import timedelta
+
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from accounts.models import User
+from accounts.serializers import normalize_phone
 from menu.models import Category, MenuItem
+from orders.models import Order
+from orders.services import OrderError, advance_order, cancel_order, confirm_payment, place_order, reject_order
 from payments.models import PaymentSettings
 
 from .decorators import super_admin_required
@@ -47,9 +54,7 @@ def logout_view(request):
 
 @login_required(login_url="dashboard:login")
 def home(request):
-    if request.user.role == User.Role.SUPER_ADMIN:
-        return redirect("dashboard:staff-list")
-    return redirect("dashboard:client-list")
+    return redirect("dashboard:order-list")
 
 
 @super_admin_required
@@ -453,3 +458,263 @@ def payment_settings(request):
     # A rejected POST has already copied its unsaved upload onto `instance`,
     # so show the current QR from a fresh read of the saved row.
     return render(request, "dashboard/settings.html", {"form": form, "saved": PaymentSettings.load()})
+
+
+# Orders and POS are day-to-day operations, open to both Super Admin and Staff.
+
+ORDER_DATE_RANGES = {"today": "Today", "yesterday": "Yesterday", "week": "Last 7 days", "all": "All dates"}
+
+# Button label for moving an order to each next status.
+ADVANCE_LABELS = {
+    Order.Status.ACCEPTED: "Accept Order",
+    Order.Status.PREPARING: "Start Preparing",
+    Order.Status.READY: "Mark Ready",
+    Order.Status.COMPLETED: "Mark Completed",
+}
+
+
+def _filtered_orders(request):
+    query = request.GET.get("q", "").strip()
+    date_range = request.GET.get("date", "today")
+    status = request.GET.get("status", "")
+    order_type = request.GET.get("type", "")
+
+    # Explicit order_by: Django drops Meta.ordering from aggregated (GROUP BY) queries.
+    order_qs = (
+        Order.objects.select_related("client")
+        .annotate(item_count=Sum("items__quantity"))
+        .order_by("-created_at", "-pk")
+    )
+
+    if query:
+        # "#MC-0146", "MC-0146" and "146" all find order 146.
+        number = re.fullmatch(r"#?(?:MC-)?0*(\d+)", query, flags=re.IGNORECASE)
+        name_match = Q(client__first_name__icontains=query)
+        order_qs = order_qs.filter(name_match | Q(pk=number.group(1)) if number else name_match)
+
+    # Ranges from local midnight rather than created_at__date: MySQL can only
+    # do __date in local time when its timezone tables are loaded.
+    midnight = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    if date_range == "today":
+        order_qs = order_qs.filter(created_at__gte=midnight)
+    elif date_range == "yesterday":
+        order_qs = order_qs.filter(created_at__gte=midnight - timedelta(days=1), created_at__lt=midnight)
+    elif date_range == "week":
+        order_qs = order_qs.filter(created_at__gte=midnight - timedelta(days=6))
+    else:
+        date_range = "all"
+
+    if status in Order.Status.values:
+        order_qs = order_qs.filter(status=status)
+    if order_type in Order.OrderType.values:
+        order_qs = order_qs.filter(order_type=order_type)
+
+    return {
+        "orders": order_qs[:200],
+        "query": query,
+        "date_range": date_range,
+        "date_ranges": ORDER_DATE_RANGES,
+        "status": status,
+        "statuses": Order.Status.choices,
+        "order_type": order_type,
+        "order_types": Order.OrderType.choices,
+    }
+
+
+@login_required(login_url="dashboard:login")
+def order_list(request):
+    context = _filtered_orders(request)
+    # The 15-second auto-refresh asks for just the table.
+    template = "dashboard/_order_table.html" if request.GET.get("partial") else "dashboard/order_list.html"
+    return render(request, template, context)
+
+
+def _order_steps(order):
+    """The status stepper: the normal flow, or Pending → Rejected/Cancelled."""
+    if order.status in (Order.Status.REJECTED, Order.Status.CANCELLED):
+        return [
+            {"label": "Pending", "state": "done"},
+            {"label": order.get_status_display(), "state": "stopped"},
+        ]
+    current = Order.FLOW.index(order.status)
+    steps = []
+    for index, status in enumerate(Order.FLOW):
+        if index < current or order.status == Order.Status.COMPLETED:
+            state = "done"
+        elif index == current:
+            state = "current"
+        else:
+            state = "todo"
+        steps.append({"label": status.label, "state": state})
+    return steps
+
+
+def _time_label(value):
+    value = timezone.localtime(value)
+    day = "today" if value.date() == timezone.localdate() else value.strftime("%d %b %Y")
+    return f"{day} {value:%H:%M}"
+
+
+@login_required(login_url="dashboard:login")
+def order_detail(request, pk):
+    order = get_object_or_404(Order.objects.select_related("client"), pk=pk)
+    items = list(order.items.all())
+    return render(
+        request,
+        "dashboard/order_detail.html",
+        {
+            "order": order,
+            "items": items,
+            "item_count": sum(line.quantity for line in items),
+            "steps": _order_steps(order),
+            "placed_label": _time_label(order.created_at),
+            "rejected_time": timezone.localtime(order.rejected_at) if order.rejected_at else None,
+            "advance_label": ADVANCE_LABELS.get(order.next_status),
+        },
+    )
+
+
+def _order_action(request, pk, action, success_message):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == "POST":
+        try:
+            order = action(order)
+            messages.success(request, success_message(order))
+        except OrderError as error:
+            messages.error(request, str(error))
+    return order
+
+
+@login_required(login_url="dashboard:login")
+def order_advance(request, pk):
+    _order_action(
+        request,
+        pk,
+        lambda order: advance_order(order, request.POST.get("from", "")),
+        lambda order: f"Order #{order.number} is now {order.get_status_display().lower()}.",
+    )
+    return redirect("dashboard:order-detail", pk=pk)
+
+
+@login_required(login_url="dashboard:login")
+def order_reject(request, pk):
+    _order_action(
+        request,
+        pk,
+        lambda order: reject_order(order, request.POST.get("reason", "")),
+        lambda order: f"Order #{order.number} rejected. Stock was returned.",
+    )
+    return redirect("dashboard:order-detail", pk=pk)
+
+
+@login_required(login_url="dashboard:login")
+def order_confirm_payment(request, pk):
+    _order_action(
+        request, pk, confirm_payment, lambda order: f"QR payment for #{order.number} confirmed."
+    )
+    return redirect("dashboard:order-detail", pk=pk)
+
+
+def _parse_cart(values):
+    """POS cart lines arrive as repeated `item=<menu item id>:<quantity>`."""
+    lines = []
+    for value in values:
+        item_id, _, quantity = value.partition(":")
+        if item_id.isdigit() and quantity.isdigit():
+            lines.append((int(item_id), int(quantity)))
+    return lines
+
+
+@login_required(login_url="dashboard:login")
+def pos(request):
+    lines = []
+    form_values = {"order_type": Order.OrderType.DINE_IN, "payment_method": Order.PaymentMethod.CASH}
+
+    if request.method == "POST":
+        lines = _parse_cart(request.POST.getlist("item"))
+        form_values = {
+            "order_type": request.POST.get("order_type", ""),
+            "table_number": request.POST.get("table_number", ""),
+            "client": request.POST.get("client", "").strip(),
+            "payment_method": request.POST.get("payment_method", ""),
+        }
+        try:
+            if form_values["order_type"] not in Order.OrderType.values:
+                raise OrderError("Choose Dine-in or Pickup.")
+            if form_values["payment_method"] not in Order.PaymentMethod.values:
+                raise OrderError("Choose a payment method.")
+            client = None
+            if form_values["client"]:
+                client = User.objects.filter(
+                    role=User.Role.CLIENT, is_active=True, phone=normalize_phone(form_values["client"])
+                ).first()
+                if client is None:
+                    raise OrderError("No active client account has that phone number. Leave it empty for a walk-in.")
+            order = place_order(
+                lines=lines,
+                order_type=form_values["order_type"],
+                table_number=form_values["table_number"],
+                payment_method=form_values["payment_method"],
+                source=Order.Source.POS,
+                client=client,
+                created_by=request.user,
+            )
+        except OrderError as error:
+            messages.error(request, str(error))
+        else:
+            if order.payment_method == Order.PaymentMethod.MANUAL_QR:
+                return redirect("dashboard:pos-pay", pk=order.pk)
+            return redirect("dashboard:pos-receipt", pk=order.pk)
+
+    items = list(MenuItem.objects.select_related("category").order_by("category__display_order", "name"))
+    return render(
+        request,
+        "dashboard/pos.html",
+        {
+            "categories": Category.objects.all(),
+            "items": items,
+            # Price and stock for the cart's own arithmetic; the server re-checks both.
+            "menu_data": {
+                str(item.pk): {"name": item.name, "price": float(item.price), "stock": item.stock if item.in_stock else 0}
+                for item in items
+            },
+            "clients": User.objects.filter(role=User.Role.CLIENT, is_active=True).order_by("first_name"),
+            "qr_available": PaymentSettings.load().qr_available,
+            "form_values": form_values,
+            # A rejected checkout comes back with the cart still filled in.
+            "initial_cart": [{"id": item_id, "qty": quantity} for item_id, quantity in lines],
+            "show_checkout": request.method == "POST",
+        },
+    )
+
+
+@login_required(login_url="dashboard:login")
+def pos_pay(request, pk):
+    order = get_object_or_404(Order, pk=pk, payment_method=Order.PaymentMethod.MANUAL_QR)
+    if order.payment_status == Order.PaymentStatus.PAID or order.is_final:
+        return redirect("dashboard:pos-receipt", pk=order.pk)
+    return render(request, "dashboard/pos_pay.html", {"order": order, "payment_settings": PaymentSettings.load()})
+
+
+@login_required(login_url="dashboard:login")
+def pos_confirm_payment(request, pk):
+    _order_action(request, pk, confirm_payment, lambda order: f"Payment for #{order.number} received.")
+    return redirect("dashboard:pos-receipt", pk=pk)
+
+
+@login_required(login_url="dashboard:login")
+def pos_cancel(request, pk):
+    _order_action(
+        request, pk, cancel_order, lambda order: f"Order #{order.number} cancelled. Stock was returned."
+    )
+    return redirect("dashboard:pos")
+
+
+@login_required(login_url="dashboard:login")
+def pos_receipt(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    return render(
+        request,
+        "dashboard/pos_receipt.html",
+        {"order": order, "items": order.items.all(), "placed_label": _time_label(order.created_at)},
+    )
