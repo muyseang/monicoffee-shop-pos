@@ -10,4 +10,5 @@ urlpatterns = [
     path("login/verify-otp/", views.LoginVerifyOTPView.as_view(), name="login-verify-otp"),
     path("login/status/", views.LoginStatusView.as_view(), name="login-status"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
+    path("me/", views.MeView.as_view(), name="me"),
 ]
