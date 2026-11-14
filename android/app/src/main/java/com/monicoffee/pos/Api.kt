@@ -93,7 +93,7 @@ data class QrPayment(
 
 data class Profile(val id: Int, val fullName: String, val phone: String, val address: String)
 
-data class OtpTicket(val requestId: String, val debugCode: String?)
+data class OtpTicket(val requestId: String, val debugCode: String?, val expiresIn: Int)
 
 data class Session(val token: String, val profile: Profile)
 
@@ -112,7 +112,7 @@ class ApiClient(var baseUrl: String, var token: String?) {
         val body = JSONObject().put("phone", phone)
         if (fullName != null) body.put("full_name", fullName)
         val o = JSONObject(send("POST", "/api/auth/$purpose/request-otp/", body, auth = false))
-        return OtpTicket(o.getString("request_id"), o.str("debug_code"))
+        return OtpTicket(o.getString("request_id"), o.str("debug_code"), o.optInt("expires_in", 300))
     }
 
     fun verifyOtp(purpose: String, phone: String, code: String): Session {
