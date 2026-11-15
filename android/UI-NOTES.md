@@ -4,11 +4,26 @@ Native Android app (Kotlin, no third-party libraries) for customers of Moni Coff
 
 ## Code layout
 
-| File | What it holds |
+Everything is under `app/src/main/java/com/monicoffee/pos/`. One activity hosts the whole app; each screen is its own class that draws itself in code from the shared app state.
+
+| Package | What it holds |
 |---|---|
-| `MainActivity.kt` | Every screen, drawn in code, plus navigation and app state (cart, session). |
-| `Api.kt` | `ApiClient` — one method per backend endpoint — and the data classes it returns. |
-| `Images.kt` | Downloads and caches menu photos and the shop's QR code. |
+| `MainActivity.kt` | The only activity. Wires the parts together and forwards lifecycle, Back and the picture chooser. |
+| `core/` | `AppConfig` (constants), `AppState` (session, menu, cart, checkout, orders), `SessionManager` (sign in / out), `TaskRunner` (background calls, polling). |
+| `data/api/` | `ApiClient` — one method per backend endpoint — plus `ApiException` and the emulator-aware `connect()`. |
+| `data/model/` | The data classes the API returns (`MenuItem`, `Order`, `Profile`, …) and `CartItem`. |
+| `data/local/` | `Preferences` — what is saved on the phone (token, profile, favorites, server address). |
+| `data/image/` | `ImageLoader` — downloads and caches menu photos and the shop's QR code. |
+| `ui/Screen.kt` | Base class of every screen: header, scrolling content, footer, bottom navigation. |
+| `ui/navigation/` | `Route` (the list of screens) and `Router` (which screen is shown, back stack). |
+| `ui/theme/`, `ui/widget/` | `Palette` (colours), `Widgets` (buttons, fields, chips, empty and error states), `Icon` (drawn icons). |
+| `ui/auth/` | Splash, onboarding, log in / sign up, OTP verification. |
+| `ui/menu/` | Home, Explore, Favorites, item details, cafe. |
+| `ui/cart/` | Cart, checkout, order placed. |
+| `ui/orders/` | My Orders, track order, order details, QR payment, upload screenshot. |
+| `ui/profile/` | Profile, personal info, payment method. |
+
+To add a screen: create a class extending `Screen` in the matching `ui/` package, add an entry to `Route` and map it in `Route.create`.
 
 ## What is connected to the backend
 
