@@ -1,104 +1,20 @@
-package com.monicoffee.pos
+package com.monicoffee.pos.data.api
 
-import org.json.JSONArray
-import org.json.JSONObject
+import com.monicoffee.pos.data.model.Category
+import com.monicoffee.pos.data.model.ItemOption
+import com.monicoffee.pos.data.model.MenuItem
+import com.monicoffee.pos.data.model.NewOrderLine
+import com.monicoffee.pos.data.model.Order
+import com.monicoffee.pos.data.model.OrderLine
+import com.monicoffee.pos.data.model.OtpTicket
+import com.monicoffee.pos.data.model.Profile
+import com.monicoffee.pos.data.model.QrPayment
+import com.monicoffee.pos.data.model.Session
 import java.io.IOException
-import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-
-/** The Android emulator's name for the development computer's own 127.0.0.1. */
-private const val EMULATOR_HOST = "10.0.2.2"
-
-/**
- * Opens a connection to the backend. From the emulator the computer is reached as 10.0.2.2,
- * but Django only answers to the names in its ALLOWED_HOSTS (127.0.0.1 and localhost by
- * default). 10.0.2.2 *is* that computer's 127.0.0.1, so we send the name the server knows
- * itself by — the same one a browser on that computer sends — and the backend needs no change.
- */
-fun connect(url: String): HttpURLConnection {
-    val target = URL(url)
-    val connection = target.openConnection() as HttpURLConnection
-    if (target.host == EMULATOR_HOST) {
-        connection.setRequestProperty("Host", "127.0.0.1" + if (target.port == -1) "" else ":${target.port}")
-    }
-    return connection
-}
-
-/** A request the server refused (status = HTTP code) or that never reached it (status = 0). */
-class ApiException(val status: Int, message: String) : Exception(message)
-
-data class Category(val id: Int, val name: String)
-
-data class ItemOption(val id: Int, val name: String, val choices: List<String>, val extraPrice: Double)
-
-data class MenuItem(
-    val id: Int,
-    val name: String,
-    val description: String,
-    val price: Double,
-    val imageUrl: String?,
-    val categoryId: Int,
-    val categoryName: String,
-    val inStock: Boolean,
-    val options: List<ItemOption>,
-)
-
-data class OrderLine(
-    val name: String,
-    val options: String,
-    val unitPrice: Double,
-    val quantity: Int,
-    val lineTotal: Double,
-    val imageUrl: String?,
-)
-
-data class Order(
-    val id: Int,
-    val number: String,
-    val status: String,
-    val statusLabel: String,
-    val orderType: String,
-    val orderTypeLabel: String,
-    val tableNumber: String,
-    val pickupTime: String?,
-    val paymentMethod: String,
-    val paymentMethodLabel: String,
-    val paymentStatus: String,
-    val paymentStatusLabel: String,
-    val paymentProofUrl: String?,
-    val total: Double,
-    val rejectionReason: String,
-    val items: List<OrderLine>,
-    val canCancel: Boolean,
-    val canUploadProof: Boolean,
-    val createdAt: String,
-) {
-    val itemCount get() = items.sumOf { it.quantity }
-
-    /** "Dine-in • Table 5" or "Pickup • 11:00". */
-    val place
-        get() = if (orderType == "dine_in") "$orderTypeLabel • Table $tableNumber"
-        else "$orderTypeLabel • ${pickupTime?.take(5) ?: ""}"
-}
-
-data class QrPayment(
-    val enabled: Boolean,
-    val qrImageUrl: String?,
-    val accountName: String,
-    val khrAccount: String,
-    val usdAccount: String,
-    val instructions: String,
-)
-
-data class Profile(val id: Int, val fullName: String, val phone: String, val address: String)
-
-data class OtpTicket(val requestId: String, val debugCode: String?, val expiresIn: Int)
-
-data class Session(val token: String, val profile: Profile)
-
-/** One line of a new order: the item, how many, and option id -> chosen value ("" for a plain add-on). */
-data class NewOrderLine(val menuItemId: Int, val quantity: Int, val picks: Map<Int, String>)
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Blocking client for the Moni Coffee Django API. Every method does network I/O,
@@ -316,6 +232,7 @@ class ApiClient(var baseUrl: String, var token: String?) {
      * come back as http://127.0.0.1:8000/media/… — which, on the emulator, is the emulator
      * itself. Point them back at the computer (see [connect]).
      */
+
     private fun JSONObject.media(key: String): String? {
         val link = str(key) ?: return null
         if (URL(baseUrl).host != EMULATOR_HOST) return link

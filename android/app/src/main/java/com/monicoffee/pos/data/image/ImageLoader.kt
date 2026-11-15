@@ -1,4 +1,4 @@
-package com.monicoffee.pos
+package com.monicoffee.pos.data.image
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -6,10 +6,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
 import android.widget.ImageView
+import com.monicoffee.pos.data.api.connect
 import java.util.concurrent.Executors
 
 /** Loads menu photos and QR codes from the server into ImageViews, with a memory cache. */
-object Images {
+object ImageLoader {
     private const val MAX_SIDE = 720
     private val pool = Executors.newFixedThreadPool(3)
     private val main = Handler(Looper.getMainLooper())
