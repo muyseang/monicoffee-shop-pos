@@ -45,6 +45,22 @@ Expected result after step 4: `http://127.0.0.1:8000/admin/` shows the Django ad
 | staff | staff1 | Staff@12345 |
 | client | client1 | Client@12345 |
 
+## Test phone sign-in with the SMS Forwarder
+Clients sign up and log in by texting a 4-digit code to the shop phone. The **Moni SMS Forwarder** app runs on that phone and confirms the code with the backend.
+
+**Download:** [moni-sms-forwarder-v1.0.apk](https://drive.google.com/file/d/1GYinhEnKm_JNQE4QqNoiGJ1F3G-Cv0le/view) (v1.0, 20 MB, Android 7+ on 64-bit ARM phones).
+
+1. Start the backend so the phone can reach it: `python manage.py runserver 0.0.0.0:8000`, and add the PC's Wi-Fi IP to `ALLOWED_HOSTS` in `backend/.env`. The phone and the PC must be on the same Wi-Fi.
+2. Install the APK on the shop phone. Play Protect blocks sideloaded apps that read SMS, so either:
+   - install from the PC: turn on *Developer options → Wireless debugging* (or USB debugging), then `adb install moni-sms-forwarder-v1.0.apk`, or
+   - in *Play Store → Play Protect → Settings*, turn off *Scan apps with Play Protect*, install the APK, then turn scanning back on.
+3. In the app:
+   - tap **Edit gateway** and enter `http://<PC Wi-Fi IP>:8000/api/auth/`
+   - on the **Permissions** tab, allow SMS
+   - turn on **SMS listening** and allow notifications
+4. In *Settings → Apps → MoniSmsForwarder → Battery*, choose **Unrestricted** so the phone doesn't stop it in the background.
+5. In the client app, sign up, then tap **Open SMS App** and send the code to the shop phone. The client app signs in within a few seconds. Without a real SMS, enter the phone number and code in the Forwarder's **Manual OTP entry** instead.
+
 ## MVP status (mirrors the Trello board — every ✅ must have a commit/PR link on its card)
 | # | MVP item (from Scope Memo) | Owner | Status | Evidence (commit / PR) |
 |---|---|---|---|---|
