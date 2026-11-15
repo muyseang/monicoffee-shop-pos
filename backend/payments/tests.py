@@ -106,9 +106,15 @@ class PaymentMethodsAPITests(TestCase):
     def test_qr_hidden_until_configured(self):
         response = self.client.get(self.url, HTTP_AUTHORIZATION=f"Token {self.token.key}")
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["cash"]["enabled"])
         self.assertFalse(response.json()["manual_qr"]["enabled"])
         self.assertIsNone(response.json()["manual_qr"]["qr_image_url"])
+
+    def test_cash_offered_to_staff_but_not_app_clients(self):
+        response = self.client.get(self.url, HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        self.assertFalse(response.json()["cash"]["enabled"])
+        staff = Token.objects.create(user=User.objects.create_user("staff9", role=User.Role.STAFF))
+        response = self.client.get(self.url, HTTP_AUTHORIZATION=f"Token {staff.key}")
+        self.assertTrue(response.json()["cash"]["enabled"])
 
     def test_returns_qr_details_when_enabled(self):
         PaymentSettings.objects.create(
