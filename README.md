@@ -70,6 +70,6 @@ Expected result after step 4: `http://127.0.0.1:8000/admin/` shows the Django ad
 `<command to run tests>` — <n> tests, last run <date>, all passing.
 
 ## Links
-- Postman collection: `docs/<name>.postman_collection.json`
+- Postman collection: `docs/MoniCoffee.postman_collection.json` (usage notes: `docs/api-usage.md`)
 - ERD: `docs/erd.png` (must match the running schema)
 - Video (view access checked from an incognito window): <link>
