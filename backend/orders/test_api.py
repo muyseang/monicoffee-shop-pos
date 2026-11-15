@@ -25,6 +25,8 @@ class ClientApiTestCase(OrderTestCase):
         self.size = ItemOption.objects.create(menu_item=self.latte, name="Size", choices=["Small", "Medium"])
         self.shot = ItemOption.objects.create(menu_item=self.latte, name="Extra Shot", extra_price="0.50")
         self.api = self.api_for(self.client_user)
+        # App orders are QR only, so the shop's QR has to be set up.
+        PaymentSettings.objects.create(qr_enabled=True, qr_image=png_upload())
 
     def api_for(self, user):
         api = APIClient()
@@ -35,7 +37,7 @@ class ClientApiTestCase(OrderTestCase):
         body = {
             "order_type": "dine_in",
             "table_number": "5",
-            "payment_method": "cash",
+            "payment_method": "manual_qr",
             "items": [{"menu_item": self.latte.pk, "quantity": 1}],
         }
         body.update(overrides)
@@ -127,8 +129,22 @@ class PlaceOrderApiTests(ClientApiTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_qr_refused_when_turned_off(self):
-        response = self.api.post(reverse("orders"), self.order_body(payment_method="manual_qr"), format="json")
+        settings = PaymentSettings.load()
+        settings.qr_enabled = False
+        settings.save()
+        response = self.api.post(reverse("orders"), self.order_body(), format="json")
         self.assertEqual(response.status_code, 400)
+        self.assertIn("QR payment isn't set up", response.json()["payment_method"][0])
+
+    def test_cash_refused_in_app(self):
+        response = self.api.post(reverse("orders"), self.order_body(payment_method="cash"), format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("paid by QR", response.json()["payment_method"][0])
+        self.assertFalse(Order.objects.exists())
+
+    def test_pos_still_takes_cash(self):
+        order = self.place(payment_method=Order.PaymentMethod.CASH, source=Order.Source.POS)
+        self.assertEqual(order.payment_method, Order.PaymentMethod.CASH)
 
 
 class TrackOrderApiTests(ClientApiTestCase):
