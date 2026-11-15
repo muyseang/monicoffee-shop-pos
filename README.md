@@ -38,6 +38,8 @@ python manage.py runserver
 ```
 Expected result after step 4: `http://127.0.0.1:8000/admin/` shows the Django admin login page.
 
+> **Client sign-up and login require the Moni SMS Forwarder app** on the shop phone. It confirms the code each customer texts to the shop. APK: [moni-sms-forwarder-v1.0.apk](https://drive.google.com/file/d/1GYinhEnKm_JNQE4QqNoiGJ1F3G-Cv0le/view) · Source: [github.com/muyseang/MoniSmsForwarder](https://github.com/muyseang/MoniSmsForwarder) · Setup: [Test phone sign-in with the SMS Forwarder](#test-phone-sign-in-with-the-sms-forwarder)
+
 ## Demo accounts (seeded)
 | Role | Login | Password |
 |---|---|---|
@@ -48,7 +50,8 @@ Expected result after step 4: `http://127.0.0.1:8000/admin/` shows the Django ad
 ## Test phone sign-in with the SMS Forwarder
 Clients sign up and log in by texting a 4-digit code to the shop phone. The **Moni SMS Forwarder** app runs on that phone and confirms the code with the backend.
 
-**Download:** [moni-sms-forwarder-v1.0.apk](https://drive.google.com/file/d/1GYinhEnKm_JNQE4QqNoiGJ1F3G-Cv0le/view) (v1.0, 20 MB, Android 7+ on 64-bit ARM phones).
+**Download:** [moni-sms-forwarder-v1.0.apk](https://drive.google.com/file/d/1GYinhEnKm_JNQE4QqNoiGJ1F3G-Cv0le/view) (v1.0, 20 MB, Android 7+ on 64-bit ARM phones).  
+**Source code:** [github.com/muyseang/MoniSmsForwarder](https://github.com/muyseang/MoniSmsForwarder).
 
 1. Start the backend so the phone can reach it: `python manage.py runserver 0.0.0.0:8000`, and add the PC's Wi-Fi IP to `ALLOWED_HOSTS` in `backend/.env`. The phone and the PC must be on the same Wi-Fi.
 2. Install the APK on the shop phone. Play Protect blocks sideloaded apps that read SMS, so either:
@@ -86,6 +89,7 @@ Clients sign up and log in by texting a 4-digit code to the shop phone. The **Mo
 `<command to run tests>` — <n> tests, last run <date>, all passing.
 
 ## Links
+- Moni SMS Forwarder (shop phone app): [APK](https://drive.google.com/file/d/1GYinhEnKm_JNQE4QqNoiGJ1F3G-Cv0le/view) · [source](https://github.com/muyseang/MoniSmsForwarder)
 - Postman collection: `docs/<name>.postman_collection.json`
 - ERD: `docs/erd.png` (must match the running schema)
 - Video (view access checked from an incognito window): <link>
