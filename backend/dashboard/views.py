@@ -7,6 +7,7 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -17,6 +18,7 @@ from orders.models import Order
 from orders.services import OrderError, advance_order, cancel_order, confirm_payment, place_order, reject_order
 from payments.models import PaymentSettings
 
+from .context_processors import pending_order_count
 from .decorators import super_admin_required
 from .forms import (
     AdjustStockForm,
@@ -527,6 +529,12 @@ def order_list(request):
     # The 15-second auto-refresh asks for just the table.
     template = "dashboard/_order_table.html" if request.GET.get("partial") else "dashboard/order_list.html"
     return render(request, template, context)
+
+
+@login_required(login_url="dashboard:login")
+def pending_order_count_view(request):
+    """The sidebar's Pending count, polled every 15 seconds so new orders show on any page."""
+    return JsonResponse({"pending": pending_order_count()})
 
 
 def _order_steps(order):
