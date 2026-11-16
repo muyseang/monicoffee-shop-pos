@@ -1,11 +1,11 @@
-{% load static %}
+{% load static dashboard_assets %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Moni Coffee Admin{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+  <link rel="stylesheet" href="{% versioned_static 'dashboard/dashboard.css' %}">
 </head>
 <body>
   <div class="shell">
@@ -92,7 +92,7 @@
       {% block content %}{% endblock %}
     </main>
   </div>
-  <script src="{% static 'dashboard/live-search.js' %}"></script>
+  <script src="{% versioned_static 'dashboard/live-search.js' %}"></script>
   {% if user.is_authenticated %}
     <script>
       // Keep the sidebar's Pending count current on every page, every 15 seconds
