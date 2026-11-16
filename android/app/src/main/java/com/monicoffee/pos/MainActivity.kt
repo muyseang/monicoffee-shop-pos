@@ -35,7 +35,6 @@ class MainActivity : Activity() {
         api = ApiClient(prefs.server, prefs.token)
         session.restore()
         state.menu.favorites.addAll(prefs.favorites)
-        state.checkout.payment = prefs.payment
         router.show(Route.SPLASH)
         tasks.later(AppConfig.SPLASH_MS) {
             if (!isDestroyed && router.current == Route.SPLASH) router.show(session.startRoute)
@@ -78,7 +77,8 @@ class MainActivity : Activity() {
         const val PICK_PROOF = 41
 
         private val FORMS = setOf(
-            Route.LOGIN, Route.REGISTER, Route.VERIFICATION, Route.VERIFYING, Route.PERSONAL_INFO, Route.SPLASH,
+            // Not VERIFICATION / VERIFYING: they only poll, and must poll again after the SMS app.
+            Route.LOGIN, Route.REGISTER, Route.PERSONAL_INFO, Route.SPLASH,
         )
     }
 }
