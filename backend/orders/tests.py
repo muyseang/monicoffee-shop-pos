@@ -202,6 +202,29 @@ class OrderDashboardTests(OrderTestCase):
         orders = list(self.client.get(reverse("dashboard:order-list")).context["orders"])
         self.assertEqual(orders[:2], [second, first])
 
+    def test_sidebar_counts_pending_orders(self):
+        self.place(client=self.client_user)
+        old = self.place()
+        Order.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=3))
+        advance_order(self.place(), Order.Status.PENDING)  # accepted: no longer counted
+
+        for url in (reverse("dashboard:order-list"), reverse("dashboard:pos")):
+            response = self.client.get(url)
+            self.assertEqual(response.context["pending_order_count"], 2)
+            self.assertRegex(response.content.decode(), r'id="pending-count"[^>]*>2</span>')
+
+    def test_sidebar_count_hidden_without_pending_orders(self):
+        response = self.client.get(reverse("dashboard:order-list"))
+        self.assertEqual(response.context["pending_order_count"], 0)
+        self.assertRegex(response.content.decode(), r'id="pending-count"[^>]*\bhidden>0</span>')
+
+    def test_pending_count_endpoint(self):
+        self.place()
+        url = reverse("dashboard:order-pending-count")
+        self.assertEqual(self.client.get(url).json(), {"pending": 1})
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 302)
+
     def test_partial_refresh_returns_table_only(self):
         self.place()
         response = self.client.get(reverse("dashboard:order-list"), {"partial": "1"})
