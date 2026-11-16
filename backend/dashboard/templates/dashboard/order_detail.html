@@ -123,26 +123,32 @@
             <span class="cell-sub">{{ order.payment_proof.size|filesizeformat }} &middot; click to preview</span>
           </a>
 
-          <div id="proof-modal" class="modal-overlay proof-modal" hidden>
-            <div class="proof-modal-card" role="dialog" aria-label="Payment screenshot">
+          {# Fixed-size pop-up: the screenshot fits inside it whatever its own size; Close shuts it. #}
+          <div id="proof-modal" class="modal-overlay" hidden>
+            <div class="proof-modal-card" role="dialog" aria-modal="true" aria-labelledby="proof-modal-title">
               <div class="proof-modal-bar">
-                <strong>Payment screenshot &middot; Order #{{ order.number }} &middot; ${{ order.total|floatformat:2 }}</strong>
-                <a class="action-link primary" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener">Open original</a>
-                <button type="button" class="proof-modal-close" aria-label="Close" data-close-preview>&times;</button>
+                <strong id="proof-modal-title">Payment Screenshot</strong>
+                <span class="cell-sub">Order #{{ order.number }} &middot; ${{ order.total|floatformat:2 }}</span>
               </div>
-              <img src="{{ order.payment_proof.url }}" alt="Payment screenshot for order #{{ order.number }}">
+              <div class="proof-modal-image">
+                <img src="{{ order.payment_proof.url }}" alt="Payment screenshot for order #{{ order.number }}">
+              </div>
+              <div class="proof-modal-actions">
+                <button type="button" class="btn btn-ghost" data-close-preview>Close</button>
+              </div>
             </div>
           </div>
           <script>
             // Preview the screenshot on this page; the links still open it in a new tab without JavaScript.
             const proofModal = document.getElementById('proof-modal');
+            const closeButton = proofModal.querySelector('[data-close-preview]');
             const closePreview = () => { proofModal.hidden = true; };
             document.querySelectorAll('[data-preview]').forEach((link) => link.addEventListener('click', (event) => {
               event.preventDefault();
               proofModal.hidden = false;
+              closeButton.focus();
             }));
-            proofModal.querySelector('[data-close-preview]').addEventListener('click', closePreview);
-            proofModal.addEventListener('click', (event) => { if (event.target === proofModal) closePreview(); });
+            closeButton.addEventListener('click', closePreview);
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePreview(); });
           </script>
         {% endif %}
