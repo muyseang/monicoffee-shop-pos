@@ -20,7 +20,7 @@ abstract class BasketScreen(app: MainActivity) : Screen(app) {
         cart.toList().forEach { item ->
             val r = row(); r.addView(photo(item.item.imageUrl, 54), LinearLayout.LayoutParams(dp(54), dp(54)).apply { rightMargin = dp(12) })
             val label = column(); label.addView(text(item.item.name, 15f, Palette.ink, true)); space(label, 4)
-            label.addView(text(listOf(item.label, money(item.unitPrice)).filter { it.isNotEmpty() }.joinToString(" • "), 12f, Palette.muted))
+            label.addView(text(listOf(item.label, money(item.unitPrice)).filter { it.isNotEmpty() }.joinToString(" · "), 12f, Palette.muted))
             r.addView(label, LinearLayout.LayoutParams(0, -2, 1f))
             r.addView(stepper("−", 28, false) { item.count--; if (item.count == 0) cart.remove(item); show(screen) })
             r.addView(text("${item.count}", 14f).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(dp(30), -2))

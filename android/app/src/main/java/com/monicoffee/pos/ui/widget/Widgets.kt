@@ -2,6 +2,7 @@ package com.monicoffee.pos.ui.widget
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -17,7 +18,9 @@ import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
+import com.monicoffee.pos.R
 import com.monicoffee.pos.data.api.ApiException
 import com.monicoffee.pos.data.image.ImageLoader
 import com.monicoffee.pos.ui.theme.Palette
@@ -40,6 +43,12 @@ open class Widgets(val context: Context) {
     fun text(value: String, sp: Float = 16f, color: Int = Palette.ink, bold: Boolean = false) = TextView(context).apply {
         text = value; textSize = sp; setTextColor(color); if (bold) setTypeface(null, Typeface.BOLD)
     }
+
+    /** The welcome and sign-in designs set "bold" text in PingFang SC Semibold, which Android's medium weight matches. */
+    fun TextView.semibold() = apply { typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) }
+
+    /** Sets the line height to [multiple] × the text size, like the design's line-height (Android's own multiplier starts from the taller font height). */
+    fun TextView.leading(multiple: Float) = apply { setLineSpacing(textSize * multiple - paint.getFontMetricsInt(null), 1f) }
 
     fun space(parent: LinearLayout, height: Int) { parent.addView(View(context), LinearLayout.LayoutParams(1, dp(height))) }
 
@@ -64,6 +73,28 @@ open class Widgets(val context: Context) {
         layoutParams = LinearLayout.LayoutParams(-1, dp(52)).apply { bottomMargin = dp(16) }
     }
 
+    /**
+     * Designs 06/08/33: a 52dp field with a 1.5dp border (green while typing, or always when [green]);
+     * its placeholder moves onto the border as a 10sp label once it has text.
+     */
+    fun outlinedField(label: String, value: String, numeric: Boolean = false, green: Boolean = false): Pair<FrameLayout, EditText> {
+        val input = field(label, value, numeric).apply {
+            setPadding(dp(24), 0, dp(24), 0); letterSpacing = -0.01f
+            layoutParams = FrameLayout.LayoutParams(-1, dp(52)).apply { topMargin = dp(5) }
+        }
+        val tag = text(label, 10f, Palette.ink).apply { setBackgroundColor(Color.WHITE); setPadding(dp(8), 0, dp(8), 0); includeFontPadding = false }
+        val box = FrameLayout(context).apply {
+            addView(input); addView(tag, FrameLayout.LayoutParams(-2, dp(10)).apply { leftMargin = dp(19) })
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = -dp(5) }
+        }
+        val paint = {
+            tag.visibility = if (input.text.isEmpty()) View.INVISIBLE else View.VISIBLE
+            input.background = bg(Color.WHITE, 12).apply { setStroke(dp(3) / 2, if (green || input.hasFocus()) Palette.green else Palette.line) }
+        }
+        paint(); input.onChange { paint() }; input.setOnFocusChangeListener { _, _ -> paint() }
+        return box to input
+    }
+
     fun EditText.onChange(action: (String) -> Unit) = addTextChangedListener(object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { action(s.toString()) }
@@ -72,6 +103,11 @@ open class Widgets(val context: Context) {
 
     fun icon(name: String, color: Int = Palette.green, action: () -> Unit): View = Icon(context, name, color).apply {
         contentDescription = name; setOnClickListener { action() }; layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+    }
+
+    /** One of the design's icons (res/drawable/ic_*), drawn at its own size and optionally recoloured. */
+    fun vector(res: Int, tint: Int? = null): ImageView = ImageView(context).apply {
+        setImageResource(res); scaleType = ImageView.ScaleType.CENTER; tint?.let { imageTintList = ColorStateList.valueOf(it) }
     }
 
     /** A drawing that is only decoration (not a button). */
@@ -102,50 +138,56 @@ open class Widgets(val context: Context) {
 
     /** Two or three choices sharing one full-width bar (Dine in / Pickup, the My Orders tabs). */
     fun segmented(parent: LinearLayout, values: List<String>, tinted: Boolean, isOn: (String) -> Boolean, action: (String) -> Unit) {
-        val bar = row().apply { setPadding(dp(4), dp(4), dp(4), dp(4)); background = if (tinted) bg(Palette.mint, 12) else bg(Color.WHITE, 12, Palette.line) }
+        // Untinted: the My Orders tab bar (design 45), 8dp inside a 1.5dp #F4F4F4 border, 14sp tabs with 9dp corners.
+        val bar = row().apply {
+            if (tinted) { setPadding(dp(4), dp(4), dp(4), dp(4)); background = bg(Palette.mint, 12) }
+            else { setPadding(dp(8), dp(8), dp(8), dp(8)); background = bg(Color.WHITE, 12).apply { setStroke(dp(3) / 2, Color.rgb(244, 244, 244)) } }
+        }
         values.forEach { value ->
             val on = isOn(value)
-            bar.addView(text(value, 15f, if (on) Color.WHITE else Palette.muted, on).apply {
-                gravity = Gravity.CENTER; if (on) background = bg(Palette.green, 10); maxLines = 1
+            bar.addView(text(value, if (tinted) 15f else 14f, if (on) Color.WHITE else Palette.muted, on).apply {
+                gravity = Gravity.CENTER; if (on) background = bg(Palette.green, if (tinted) 10 else 9); maxLines = 1; letterSpacing = -0.01f
                 setOnClickListener { action(value) }
-            }, LinearLayout.LayoutParams(0, dp(42), 1f))
+            }, LinearLayout.LayoutParams(0, dp(if (tinted) 42 else 41), 1f))
         }
         parent.addView(bar)
     }
 
-    /** Centered picture, message and button for a screen that has nothing to list yet. */
-    fun empty(parent: LinearLayout, art: String, title: String, detail: String, label: String, action: () -> Unit) {
-        space(parent, 96)
-        parent.addView(picture(art, Palette.green, 72)); space(parent, 20)
-        parent.addView(text(title, 20f, Palette.ink, true).apply { gravity = Gravity.CENTER }); space(parent, 10)
-        parent.addView(text(detail, 13f, Palette.muted).apply { gravity = Gravity.CENTER }); space(parent, 28)
-        parent.addView(button(label) { action() })
+    /** Empty state (design 38): a 72dp icon, an 18sp title, a 12sp line and the button, low in the page. */
+    fun empty(parent: LinearLayout, art: View, title: String, detail: String, label: String, top: Int = 175, action: () -> Unit) {
+        space(parent, top)
+        parent.addView(art, LinearLayout.LayoutParams(dp(72), dp(72)).apply { gravity = Gravity.CENTER_HORIZONTAL }); space(parent, 60)
+        parent.addView(text(title, 18f, Palette.ink, true).apply { gravity = Gravity.CENTER; letterSpacing = -0.02f }); space(parent, 12)
+        parent.addView(text(detail, 12f, Palette.muted).apply { gravity = Gravity.CENTER; letterSpacing = -0.01f; leading(1.6f) },
+            LinearLayout.LayoutParams(dp(265), -2).apply { gravity = Gravity.CENTER_HORIZONTAL }); space(parent, 40)
+        parent.addView(button(label) { action() }, LinearLayout.LayoutParams(-1, dp(56)))
     }
 
     /** A box with a small label above its content, as the checkout fields are drawn. */
     fun labelled(label: String, content: View, error: Boolean) = column().apply {
         setPadding(dp(16), dp(10), dp(16), dp(10))
-        background = bg(if (error) Palette.pink else Color.rgb(243, 243, 243), 12, if (error) Palette.red else Palette.green)
+        background = bg(if (error) Palette.pink else Color.rgb(243, 243, 243), 12).apply { setStroke(dp(3) / 2, if (error) Palette.red else Palette.green) }
         addView(text(label, 12f, if (error) Palette.red else Palette.muted)); addView(content)
     }
 
     /** Full-screen "couldn't load" state with a retry button (design: Network Error). */
     fun problem(parent: LinearLayout, error: ApiException, retry: () -> Unit) {
         val offline = error.status == 0
+        // Design 42: a 120dp pink circle with the crossed-out wifi, the 18sp title and 14sp line 12dp apart.
         space(parent, 72)
         parent.addView(FrameLayout(context).apply {
-            background = bg(Palette.pink, 100)
-            addView(Icon(context, "offline", Color.rgb(222, 68, 60)), FrameLayout.LayoutParams(dp(48), dp(48), Gravity.CENTER))
-        }, LinearLayout.LayoutParams(dp(96), dp(96)).apply { gravity = Gravity.CENTER_HORIZONTAL }); space(parent, 24)
-        parent.addView(text(if (offline) "No internet connection" else "Something went wrong", 18f, Palette.ink, true).apply { gravity = Gravity.CENTER }); space(parent, 8)
-        parent.addView(text(if (offline) "Please check your connection and try again." else error.message ?: "", 13f, Palette.muted).apply { gravity = Gravity.CENTER })
+            background = bg(Color.rgb(253, 241, 241), 60)
+            addView(vector(R.drawable.ic_wifi_off), FrameLayout.LayoutParams(dp(56), dp(56), Gravity.CENTER))
+        }, LinearLayout.LayoutParams(dp(120), dp(120)).apply { gravity = Gravity.CENTER_HORIZONTAL }); space(parent, 32)
+        parent.addView(text(if (offline) "No internet connection" else "Something went wrong", 18f, Palette.ink, true).apply { gravity = Gravity.CENTER }); space(parent, 12)
+        parent.addView(text(if (offline) "Please check your connection and try again." else error.message ?: "", 14f, Palette.muted).apply { gravity = Gravity.CENTER })
         // Which server could not be reached — needed when the address typed on the login screen is wrong.
         if (offline) { space(parent, 6); parent.addView(text(error.message ?: "", 11f, Palette.muted).apply { gravity = Gravity.CENTER }) }
-        space(parent, 28); parent.addView(button("Try Again") { retry() })
+        space(parent, 40); parent.addView(button("Try Again") { retry() }, LinearLayout.LayoutParams(-1, dp(56)))
     }
 
     /** Grey placeholder rows shown while a list is loading (design: Loading). */
-    fun skeleton(parent: LinearLayout) {
+    fun skeleton(parent: LinearLayout, label: String = "Loading…") {
         val grey = Color.rgb(236, 236, 236)
         val bar = { width: Int, height: Int ->
             View(context).apply { background = bg(grey, 6); layoutParams = LinearLayout.LayoutParams(if (width == 0) -1 else dp(width), dp(height)).apply { bottomMargin = dp(8) } }
@@ -158,6 +200,10 @@ open class Widgets(val context: Context) {
                 addView(column().apply { addView(bar(120, 14)); addView(bar(0, 12)); addView(bar(70, 12)) }, LinearLayout.LayoutParams(0, -2, 1f))
             }); space(parent, 20)
         }
+        // Design 43: a spinner and "Loading menu…" under the placeholders.
+        space(parent, 24)
+        parent.addView(ProgressBar(context).apply { indeterminateTintList = ColorStateList.valueOf(Palette.muted) }, LinearLayout.LayoutParams(dp(24), dp(24)).apply { gravity = Gravity.CENTER_HORIZONTAL })
+        space(parent, 8); parent.addView(text(label, 12f, Palette.muted).apply { gravity = Gravity.CENTER })
     }
 
     /** The design's confirmation dialog: icon, question, a red button that does it and an outlined one that doesn't. */
@@ -178,14 +224,18 @@ open class Widgets(val context: Context) {
 
     /** One line of the order-status timeline; [tail] is the colour of the connector to the next step (null for the last). */
     fun step(parent: LinearLayout, mark: String, color: Int, title: String, detail: String, titleColor: Int, detailColor: Int, tail: Int?) {
+        // Design 27/46 timeline: a 24dp dot, a 2×28dp connector, the text 14dp to the right.
         parent.addView(row().apply {
-            gravity = Gravity.TOP
+            gravity = Gravity.TOP; setPadding(dp(4), 0, 0, 0)
             addView(column().apply {
                 gravity = Gravity.CENTER_HORIZONTAL
-                addView(Icon(context, mark, color), LinearLayout.LayoutParams(dp(22), dp(22)))
-                if (tail != null) addView(View(context).apply { setBackgroundColor(tail) }, LinearLayout.LayoutParams(dp(2), dp(24)))
-            }, LinearLayout.LayoutParams(dp(22), -2).apply { rightMargin = dp(12) })
-            addView(column().apply { addView(text(title, 14f, titleColor, true)); addView(text(detail, 12f, detailColor)) }, LinearLayout.LayoutParams(0, -2, 1f))
+                addView(Icon(context, mark, color), LinearLayout.LayoutParams(dp(24), dp(24)))
+                if (tail != null) addView(View(context).apply { setBackgroundColor(tail) }, LinearLayout.LayoutParams(dp(2), dp(28)))
+            }, LinearLayout.LayoutParams(dp(24), -2).apply { rightMargin = dp(14) })
+            addView(column().apply {
+                setPadding(0, dp(2), 0, 0)
+                addView(text(title, 14f, titleColor, true)); space(this, 2); addView(text(detail, 12f, detailColor))
+            }, LinearLayout.LayoutParams(0, -2, 1f))
         })
     }
 
@@ -226,11 +276,24 @@ open class Widgets(val context: Context) {
         val r = row()
         values.forEach { value ->
             val on = isOn(value)
-            r.addView(text(value, 14f, if (on) Color.WHITE else if (pills) Palette.green else Palette.muted, on).apply {
+            val chip = text(value, 14f, if (on) Color.WHITE else Palette.muted, on).apply {
                 gravity = Gravity.CENTER; setPadding(dp(14), dp(9), dp(14), dp(9))
-                background = if (pills) bg(if (on) Palette.green else Color.WHITE, 20, Palette.green) else bg(if (on) Palette.green else Palette.soft, 8)
+                background = bg(if (on) Palette.green else Palette.soft, 8)
                 setOnClickListener { action(value) }
-            }, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(10) })
+            }
+            // The Details options (design 39): 12sp, 12×5 padding, 12dp corners; chosen ones filled green, the rest outlined.
+            if (pills) chip.apply {
+                textSize = 12f; setTypeface(null, Typeface.NORMAL); setTextColor(if (on) Color.WHITE else Color.rgb(119, 119, 119))
+                setPadding(dp(12), dp(5), dp(12), dp(5)); minHeight = dp(32)
+                background = if (on) bg(Palette.green, 12) else bg(Color.TRANSPARENT, 12, Palette.green)
+            }
+            // Home's category chips (Mainpage design): 10×6 padding, a cup on the chosen one, see-through grey otherwise.
+            if (!pills) chip.apply {
+                setPadding(dp(10), dp(6), dp(10), dp(6)); leading(1.5f)
+                if (on) { setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_cup, 0, 0, 0); compoundDrawablePadding = dp(10) }
+                else background = bg(Color.argb(89, 237, 237, 237), 8)
+            }
+            r.addView(chip, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(if (pills) 15 else 12) })
         }
         strip.addView(r); parent.addView(strip)
     }

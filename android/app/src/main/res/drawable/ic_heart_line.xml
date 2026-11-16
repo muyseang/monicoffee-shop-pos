@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Converted from the Figma design's SVG icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp" android:height="72dp"
+    android:viewportWidth="72" android:viewportHeight="72">
+    <group android:translateX="0" android:translateY="0">
+        <path android:pathData="M37.86 62.43C36.84 62.79 35.16 62.79 34.14 62.43C25.44 59.46 6 47.07 6 26.07C6 16.8 13.47 9.3 22.68 9.3C28.14 9.3 32.97 11.94 36 16.02C39.03 11.94 43.89 9.3 49.32 9.3C58.53 9.3 66 16.8 66 26.07C66 47.07 46.56 59.46 37.86 62.43Z"
+            android:strokeColor="#00764F"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

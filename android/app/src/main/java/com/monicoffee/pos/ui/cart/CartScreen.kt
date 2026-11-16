@@ -2,6 +2,7 @@ package com.monicoffee.pos.ui.cart
 
 import android.app.AlertDialog
 import com.monicoffee.pos.MainActivity
+import com.monicoffee.pos.R
 import com.monicoffee.pos.ui.countLabel
 import com.monicoffee.pos.ui.money
 import com.monicoffee.pos.ui.navigation.Route
@@ -11,7 +12,7 @@ class CartScreen(app: MainActivity) : BasketScreen(app) {
     override fun draw() {
         if (cart.isEmpty()) {
             header("My Cart")
-            empty(content(), "cart", "Your cart is empty", "Browse the menu and add your favorite drinks\nto get started.", "Browse Menu") { history.clear(); show(Route.HOME) }
+            empty(content(), vector(R.drawable.ic_empty_cart), "Your cart is empty", "Browse the menu and add your favorite drinks to get started.", "Browse Menu") { history.clear(); show(Route.HOME) }
             return
         }
         header("My Cart", icon("trash", Palette.red) {

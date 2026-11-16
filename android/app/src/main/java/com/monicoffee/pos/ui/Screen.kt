@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import com.monicoffee.pos.MainActivity
+import com.monicoffee.pos.R
 import com.monicoffee.pos.data.api.ApiException
 import com.monicoffee.pos.ui.navigation.Route
 import com.monicoffee.pos.ui.theme.Palette
@@ -67,10 +68,11 @@ abstract class Screen(protected val app: MainActivity) : Widgets(app) {
 
     /** Title bar with a back arrow and an optional button on the right. */
     protected fun header(title: String, right: View? = null) {
-        val bar = row().apply { setPadding(dp(16), dp(12), dp(16), dp(12)) }
-        bar.addView(icon("back", Palette.ink) { back() })
-        bar.addView(text(title, 17f, Palette.ink, true).apply { gravity = Gravity.CENTER }, LinearLayout.LayoutParams(0, dp(40), 1f))
-        bar.addView(right ?: View(context), LinearLayout.LayoutParams(dp(40), dp(40)))
+        // The designs' title bar: 16dp under the status bar, a 36dp back button, the title centred across the page.
+        val bar = row().apply { setPadding(dp(24), dp(16), dp(24), dp(16)) }
+        bar.addView(vector(R.drawable.ic_back).apply { contentDescription = "Back"; setOnClickListener { back() } }, LinearLayout.LayoutParams(dp(36), dp(36)))
+        bar.addView(text(title, 16f, Palette.heading, true).apply { gravity = Gravity.CENTER; letterSpacing = -0.02f }, LinearLayout.LayoutParams(0, dp(36), 1f))
+        bar.addView(right ?: View(context), LinearLayout.LayoutParams(dp(36), dp(36)))
         root.addView(bar)
     }
 
@@ -85,9 +87,10 @@ abstract class Screen(protected val app: MainActivity) : Widgets(app) {
     }
 
     /** The main button pinned to the bottom of the page, with an optional view above it. */
-    protected fun footer(label: String, color: Int = Palette.green, above: View? = null, action: () -> Unit) {
+    protected fun footer(label: String, color: Int = Palette.green, above: View? = null, raised: Boolean = false, action: () -> Unit) {
         root.addView(column().apply {
-            setPadding(dp(24), dp(16), dp(24), dp(20)); elevation = dp(8).toFloat(); setBackgroundColor(Color.WHITE)
+            // [raised]: the soft shadow above the checkout's payment bar (design 18/19).
+            setPadding(dp(24), dp(16), dp(24), dp(20)); setBackgroundColor(Color.WHITE); if (raised) elevation = dp(10).toFloat()
             above?.let { addView(it) }
             addView(button(label, color, action))
         })
@@ -95,21 +98,30 @@ abstract class Screen(protected val app: MainActivity) : Widgets(app) {
 
     /** The bottom navigation bar, with [active] highlighted. */
     protected fun nav(active: Route) {
-        val bar = row().apply { setPadding(dp(8), dp(7), dp(8), dp(8)); elevation = dp(8).toFloat(); setBackgroundColor(Color.WHITE) }
-        TABS.forEach { (name, tab) ->
-            val color = if (tab == active) Palette.green else Palette.muted
-            val open = { history.clear(); show(tab) }
+        // Design: 56dp tall, 24dp sides and 38dp between tabs, 24dp icons over 10sp labels.
+        val bar = row().apply { setPadding(dp(24), 0, dp(24), 0); elevation = dp(5).toFloat(); setBackgroundColor(Color.WHITE) }
+        TABS.forEachIndexed { i, tab ->
+            val on = tab.route == active
+            val color = if (on) Palette.green else Palette.muted
             bar.addView(column().apply {
                 gravity = Gravity.CENTER
-                addView(icon(name.lowercase(), color, open))
-                addView(text(name, 11f, color, tab == active).apply { gravity = Gravity.CENTER })
-                setOnClickListener { open() }
-            }, LinearLayout.LayoutParams(0, dp(62), 1f))
+                addView(vector(if (on) tab.onIcon else tab.offIcon, color), LinearLayout.LayoutParams(dp(24), dp(24)))
+                addView(text(tab.name, 10f, color, on).apply { gravity = Gravity.CENTER; letterSpacing = -0.01f }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(2) })
+                setOnClickListener { history.clear(); show(tab.route) }
+            }, LinearLayout.LayoutParams(0, dp(56), 1f).apply { if (i > 0) leftMargin = dp(38) })
         }
         root.addView(bar)
     }
 
+    /** A bottom tab; the designs fill its icon in while it is the open one. */
+    private class Tab(val name: String, val route: Route, val onIcon: Int, val offIcon: Int)
+
     private companion object {
-        val TABS = listOf("Home" to Route.HOME, "Explore" to Route.EXPLORE, "Orders" to Route.ORDERS, "Profile" to Route.PROFILE)
+        val TABS = listOf(
+            Tab("Home", Route.HOME, R.drawable.ic_nav_home, R.drawable.ic_nav_home_line),
+            Tab("Explore", Route.EXPLORE, R.drawable.ic_nav_explore, R.drawable.ic_nav_explore),
+            Tab("Orders", Route.ORDERS, R.drawable.ic_nav_orders_fill, R.drawable.ic_nav_orders),
+            Tab("Profile", Route.PROFILE, R.drawable.ic_nav_profile_fill, R.drawable.ic_nav_profile),
+        )
     }
 }
