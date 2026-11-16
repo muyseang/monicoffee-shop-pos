@@ -33,7 +33,9 @@
       <form method="post" action="{% url 'dashboard:order-advance' order.pk %}">
         {% csrf_token %}
         <input type="hidden" name="from" value="{{ order.status }}">
-        <button type="submit" class="btn btn-primary">{{ advance_label }}</button>
+        {# A QR order waits for Confirm QR Payment before it can be accepted (design A3). #}
+        <button type="submit" class="btn btn-primary"
+                {% if order.needs_payment_to_accept %}disabled title="Confirm the QR payment first"{% endif %}>{{ advance_label }}</button>
       </form>
     {% endif %}
   </div>
@@ -123,6 +125,9 @@
             {% csrf_token %}
             <button type="submit" class="btn btn-outline btn-block">Confirm QR Payment</button>
           </form>
+        {% endif %}
+        {% if order.needs_payment_to_accept %}
+          <p class="payment-note">Accept Order stays disabled until payment is confirmed.</p>
         {% endif %}
       </div>
     </div>

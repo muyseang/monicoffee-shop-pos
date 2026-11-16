@@ -136,6 +136,9 @@ a { color: inherit; text-decoration: none; }
 .btn-outline { background: #fff; color: var(--green); box-shadow: inset 0 0 0 1.5px var(--green); }
 .btn-outline:hover { background: var(--green-soft); }
 .btn:disabled { opacity: 0.5; cursor: default; }
+/* Accept Order while a QR payment is unconfirmed: the design's flat grey, not a faded green. */
+.btn-primary:disabled { opacity: 1; background: #e6e6e6; color: #a9a9a9; cursor: not-allowed; }
+.payment-note { margin: 10px 0 0; color: #737373; font-size: 0.75rem; }
 
 .hint { color: var(--muted); font-size: 0.85rem; margin-top: 16px; }
 
