@@ -3,6 +3,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from menu.models import ItemOption
+from payments.models import PaymentSettings
 
 from .models import Order, OrderItem
 
@@ -76,6 +77,16 @@ class PlaceOrderSerializer(serializers.Serializer):
     pickup_time = serializers.TimeField(required=False, allow_null=True)
     payment_method = serializers.ChoiceField(choices=Order.PaymentMethod.choices)
     items = OrderLineSerializer(many=True, allow_empty=False, max_length=30)
+
+    def validate_payment_method(self, value):
+        # Orders from the app are paid by QR only, so nobody can order for pickup
+        # and never come to pay. Cash stays available at the counter (POS), which
+        # calls place_order() directly rather than this API.
+        if value != Order.PaymentMethod.MANUAL_QR:
+            raise serializers.ValidationError("Orders in the app are paid by QR. Cash is only taken at the counter.")
+        if not PaymentSettings.load().qr_available:
+            raise serializers.ValidationError("Ordering in the app is unavailable right now: QR payment isn't set up yet.")
+        return value
 
     def validate(self, attrs):
         # Proposal 4.1.6 / acceptance criteria: each order type needs its detail.
