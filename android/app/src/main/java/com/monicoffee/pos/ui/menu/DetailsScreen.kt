@@ -118,7 +118,10 @@ class DetailsScreen(app: MainActivity) : Screen(app) {
             add.setOnClickListener {
                 val existing = cart.find { it.item.id == item.id && it.picks == entry.picks }
                 if (existing != null) existing.count = minOf(AppConfig.MAX_QUANTITY, existing.count + menu.quantity) else cart.add(entry)
-                navigate(Route.CART)
+                // Back to the menu the item was picked from (Home usually) to keep adding;
+                // the cart icon's red count shows what's in the cart.
+                toast("${item.name} added to your cart.")
+                back()
             }
         } else add.addView(text("Out of Stock", 16f, Palette.muted, true))
         bottom.addView(add, LinearLayout.LayoutParams(dp(166), dp(56))); root.addView(bottom)

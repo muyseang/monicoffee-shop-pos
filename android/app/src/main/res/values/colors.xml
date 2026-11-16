@@ -4,5 +4,7 @@
     <color name="coffee_cream">#FFF8E1</color>
     <color name="espresso">#281A16</color>
     <color name="menu_surface">#FFFFFF</color>
+    <!-- Launcher icon background: the design's Primary/500 green. -->
+    <color name="ic_launcher_background">#00764F</color>
 </resources>
 
