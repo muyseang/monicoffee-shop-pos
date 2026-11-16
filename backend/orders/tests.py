@@ -263,6 +263,17 @@ class OrderDashboardTests(OrderTestCase):
         order.refresh_from_db()
         self.assertEqual(order.payment_status, Order.PaymentStatus.PAID)
 
+    def test_detail_previews_payment_screenshot(self):
+        PaymentSettings.objects.create(qr_enabled=True, qr_image=png_upload(), account_name="Muyseang Ung")
+        order = self.place(payment_method=Order.PaymentMethod.MANUAL_QR)
+        order.payment_proof = png_upload("proof.png")
+        order.save()
+        page = self.client.get(reverse("dashboard:order-detail", args=[order.pk])).content.decode()
+        # Shown in the thumbnail and in the full-size preview, not just linked.
+        self.assertEqual(page.count(f'<img class="proof-image" src="{order.payment_proof.url}"'), 1)
+        self.assertIn('id="proof-modal"', page)
+        self.assertIn(f'<img src="{order.payment_proof.url}"', page)
+
     def test_qr_order_is_accepted_only_after_payment_is_confirmed(self):
         # Design A3: Accept Order stays disabled until the QR payment is confirmed.
         PaymentSettings.objects.create(qr_enabled=True, qr_image=png_upload(), account_name="Muyseang Ung")
