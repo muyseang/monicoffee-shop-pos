@@ -692,23 +692,27 @@ tr:last-child td { border-bottom: none; }
   word-break: break-all;
 }
 
-/* The screenshot inside the thumbnail box, and the full-size preview it opens. */
-.proof-thumb { padding: 12px; color: var(--text); text-decoration: none; cursor: zoom-in; }
-.proof-image { display: block; width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; background: #fff; }
+/* The screenshot in a fixed-size box on the Payment card (scaled to fit, never cropped). */
+.proof-thumb { height: 190px; padding: 10px; justify-content: flex-start; color: var(--text); text-decoration: none; cursor: zoom-in; }
+.proof-image { display: block; width: 100%; height: 130px; flex: none; object-fit: contain; border-radius: 6px; background: #fff; }
+
+/* The pop-up it opens: a fixed 440 × 640 window (smaller only on small screens). */
 .proof-modal-card {
   display: flex;
   flex-direction: column;
-  max-width: min(720px, 100%);
+  width: 440px;
+  height: 640px;
+  max-width: 100%;
   max-height: 100%;
   background: #fff;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
-.proof-modal-bar { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-.proof-modal-bar strong { flex: 1; }
-.proof-modal-close { border: none; background: none; font-size: 1.6rem; line-height: 1; color: var(--muted); cursor: pointer; }
-.proof-modal-card > img { display: block; max-width: 100%; max-height: calc(100vh - 120px); object-fit: contain; margin: 0 auto; background: #f3f5f3; }
+.proof-modal-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.proof-modal-image { flex: 1; min-height: 0; padding: 12px; background: #f3f5f3; }
+.proof-modal-image img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.proof-modal-actions { display: flex; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border); }
 
 .modal-card-wide { max-width: 480px; }
 .modal-card form .field { margin: 16px 0 0; }
