@@ -86,9 +86,11 @@ class Router(private val app: MainActivity) {
         val darkTop = to == Route.HOME || to == Route.SPLASH || to == Route.ONBOARDING
         val window = app.window
         window.statusBarColor = if (to == Route.ONBOARDING) Color.BLACK else if (darkTop) Palette.dark else Color.WHITE
-        window.navigationBarColor = if (Build.VERSION.SDK_INT >= 26) Color.WHITE else Palette.ink
+        // Splash and onboarding are dark down to the home indicator (designs 01–04).
+        val darkBottom = to == Route.SPLASH || to == Route.ONBOARDING
+        window.navigationBarColor = if (darkBottom) Color.BLACK else if (Build.VERSION.SDK_INT >= 26) Color.WHITE else Palette.ink
         window.decorView.systemUiVisibility =
-            (if (Build.VERSION.SDK_INT >= 26) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0) or
+            (if (Build.VERSION.SDK_INT >= 26 && !darkBottom) View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0) or
             (if (darkTop) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)
     }
 }

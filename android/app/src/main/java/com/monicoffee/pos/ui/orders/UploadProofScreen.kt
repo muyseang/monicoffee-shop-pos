@@ -32,7 +32,7 @@ class UploadProofScreen(app: MainActivity) : Screen(app) {
             if (preview == null) {
                 addView(picture("upload", Palette.green, 40)); space(this, 10)
                 addView(text("Tap to upload screenshot", 15f, Palette.ink, true).apply { gravity = Gravity.CENTER }); space(this, 4)
-                addView(text("JPG or PNG", 12f, Palette.muted).apply { gravity = Gravity.CENTER })
+                addView(text("JPG or PNG, max 10MB", 12f, Palette.muted).apply { gravity = Gravity.CENTER })
             } else {
                 addView(ImageView(context).apply { setImageBitmap(preview); scaleType = ImageView.ScaleType.FIT_CENTER }, LinearLayout.LayoutParams(-1, dp(220))); space(this, 10)
                 addView(text("Tap to choose another", 12f, Palette.green, true).apply { gravity = Gravity.CENTER })

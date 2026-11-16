@@ -36,7 +36,12 @@ class AuthState {
     var ticket: OtpTicket? = null
     /** When [ticket] was issued, to count down its expiry. */
     var ticketAt = 0L
-    var code = ""
+
+    /** Seconds until the current code expires; 0 once it has. */
+    fun secondsLeft(): Int {
+        val t = ticket ?: return 0
+        return maxOf(0, t.expiresIn - ((System.currentTimeMillis() - ticketAt) / 1000).toInt())
+    }
 }
 
 /** The menu as last loaded, how the customer is browsing it, and the item being configured. */
@@ -62,7 +67,6 @@ class CheckoutState {
     var tableNumber = ""
     var pickupTime: String? = null
     var error = false
-    var payment = "cash"
     var qr: QrPayment? = null
 }
 
