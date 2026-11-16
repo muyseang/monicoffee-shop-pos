@@ -29,7 +29,7 @@ Send the requests from top to bottom:
    `Authorization: Token {{token}}` (set once on the collection).
 3. **Profile**, **Menu** (List menu items picks an in-stock item and its options for ordering),
    **Payments**.
-4. **Orders** — place a dine-in/cash and a pickup/QR order, list, get, upload a screenshot
+4. **Orders** — place a dine-in and a pickup order (both paid by QR — app orders are QR-only, so set up QR payment in the dashboard first; `cash` is rejected with 400), list, get, upload a screenshot
    (pick an image file for the `image` field first), then cancel.
 5. **Auth → Logout** clears the token.
 
