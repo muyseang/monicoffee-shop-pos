@@ -1534,7 +1534,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"cash\": {\n    \"enabled\": true\n  },\n  \"manual_qr\": {\n    \"enabled\": true,\n    \"qr_image_url\": \"http://127.0.0.1:8000/media/payments/112233.png\",\n    \"account_name\": \"Moni Coffee\",\n    \"khr_account_number\": \"000 000 001\",\n    \"usd_account_number\": \"000 000 002\",\n    \"instructions\": \"Scan the QR with your banking app and pay the exact amount. Staff will confirm once payment is received.\"\n  }\n}"
+              "body": "{\n  \"cash\": {\n    \"enabled\": false\n  },\n  \"manual_qr\": {\n    \"enabled\": true,\n    \"qr_image_url\": \"http://127.0.0.1:8000/media/payments/112233.png\",\n    \"account_name\": \"Moni Coffee\",\n    \"khr_account_number\": \"000 000 001\",\n    \"usd_account_number\": \"000 000 002\",\n    \"instructions\": \"Scan the QR with your banking app and pay the exact amount. Staff will confirm once payment is received.\"\n  }\n}"
             }
           ]
         }
@@ -1542,10 +1542,10 @@
     },
     {
       "name": "5. Orders",
-      "description": "Client orders. Every request only sees the caller's own orders; another client's order id returns 404.\n\n**Values**\n- `order_type`: `dine_in` (needs `table_number`) or `pickup` (needs `pickup_time`, `HH:MM`)\n- `payment_method`: `cash` or `manual_qr` (only when QR is enabled)\n- `status`: `pending` → `accepted` → `preparing` → `ready` → `completed`, or `rejected` / `cancelled`\n- `payment_status`: `not_paid`, `awaiting` (screenshot uploaded, staff checking), `paid`\n\nPrices are always calculated by the server from the database; the app only sends item ids, quantities and chosen options.",
+      "description": "Client orders. Every request only sees the caller's own orders; another client's order id returns 404.\n\n**Values**\n- `order_type`: `dine_in` (needs `table_number`) or `pickup` (needs `pickup_time`, `HH:MM`)\n- `payment_method`: `manual_qr` (app orders are QR-only and need QR set up in the dashboard; `cash` is rejected with 400 — cash is taken at the counter)\n- `status`: `pending` → `accepted` → `preparing` → `ready` → `completed`, or `rejected` / `cancelled`\n- `payment_status`: `not_paid`, `awaiting` (screenshot uploaded, staff checking), `paid`\n\nPrices are always calculated by the server from the database; the app only sends item ids, quantities and chosen options.",
       "item": [
         {
-          "name": "Place order – dine-in, cash",
+          "name": "Place order – dine-in, QR",
           "request": {
             "method": "POST",
             "header": [
@@ -1567,7 +1567,7 @@
             "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"cash\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1599,7 +1599,7 @@
                 "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"cash\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1616,7 +1616,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"cash\",\n  \"payment_method_label\": \"Cash\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": false,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n}"
+              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": true,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n}"
             },
             {
               "name": "400 – missing table number",
@@ -1641,7 +1641,7 @@
                 "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"cash\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1683,7 +1683,7 @@
                 "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"cash\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1858,7 +1858,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "[\n  {\n    \"id\": 22,\n    \"number\": \"MC-0022\",\n    \"status\": \"pending\",\n    \"status_label\": \"Pending\",\n    \"order_type\": \"dine_in\",\n    \"order_type_label\": \"Dine-in\",\n    \"table_number\": \"5\",\n    \"pickup_time\": null,\n    \"payment_method\": \"cash\",\n    \"payment_method_label\": \"Cash\",\n    \"payment_status\": \"not_paid\",\n    \"payment_status_label\": \"Not paid\",\n    \"payment_proof_url\": null,\n    \"total\": \"7.00\",\n    \"rejection_reason\": \"\",\n    \"items\": [\n      {\n        \"name\": \"Cappuccino\",\n        \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n        \"unit_price\": \"3.50\",\n        \"quantity\": 2,\n        \"line_total\": \"7.00\",\n        \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n      }\n    ],\n    \"can_cancel\": true,\n    \"can_upload_proof\": false,\n    \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n    \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n  }\n]"
+              "body": "[\n  {\n    \"id\": 22,\n    \"number\": \"MC-0022\",\n    \"status\": \"pending\",\n    \"status_label\": \"Pending\",\n    \"order_type\": \"dine_in\",\n    \"order_type_label\": \"Dine-in\",\n    \"table_number\": \"5\",\n    \"pickup_time\": null,\n    \"payment_method\": \"manual_qr\",\n    \"payment_method_label\": \"Manual QR\",\n    \"payment_status\": \"not_paid\",\n    \"payment_status_label\": \"Not paid\",\n    \"payment_proof_url\": null,\n    \"total\": \"7.00\",\n    \"rejection_reason\": \"\",\n    \"items\": [\n      {\n        \"name\": \"Cappuccino\",\n        \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n        \"unit_price\": \"3.50\",\n        \"quantity\": 2,\n        \"line_total\": \"7.00\",\n        \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n      }\n    ],\n    \"can_cancel\": true,\n    \"can_upload_proof\": true,\n    \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n    \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n  }\n]"
             }
           ]
         },
@@ -1908,7 +1908,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"cash\",\n  \"payment_method_label\": \"Cash\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": false,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n}"
+              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": true,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n}"
             },
             {
               "name": "404 – not yours / doesn't exist",
@@ -2101,7 +2101,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"cancelled\",\n  \"status_label\": \"Cancelled\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"cash\",\n  \"payment_method_label\": \"Cash\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": false,\n  \"can_upload_proof\": false,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.723012+07:00\"\n}"
+              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"cancelled\",\n  \"status_label\": \"Cancelled\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": false,\n  \"can_upload_proof\": false,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.723012+07:00\"\n}"
             },
             {
               "name": "400 – too late",
