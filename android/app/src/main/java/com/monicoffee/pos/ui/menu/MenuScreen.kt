@@ -6,13 +6,13 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.monicoffee.pos.MainActivity
+import com.monicoffee.pos.R
 import com.monicoffee.pos.core.AppConfig
 import com.monicoffee.pos.data.model.MenuItem
 import com.monicoffee.pos.ui.Screen
 import com.monicoffee.pos.ui.money
 import com.monicoffee.pos.ui.navigation.Route
 import com.monicoffee.pos.ui.theme.Palette
-import com.monicoffee.pos.ui.widget.Icon
 
 /** What Home, Explore and Favorites share: loading the menu and drawing it as a grid of cards. */
 abstract class MenuScreen(app: MainActivity) : Screen(app) {
@@ -41,8 +41,8 @@ abstract class MenuScreen(app: MainActivity) : Screen(app) {
         if (list.isEmpty()) {
             when {
                 menu.error != null -> problem(grid, menu.error!!) { refreshMenu(force = true); redraw() }
-                menu.items.isEmpty() && menu.loading -> skeleton(grid)
-                screen == Route.FAVORITES -> empty(grid, "heart", "No favorite coffee yet", "When there's coffee, it will appear here", "Add Now") { history.clear(); show(Route.EXPLORE) }
+                menu.items.isEmpty() && menu.loading -> skeleton(grid, "Loading menu…")
+                screen == Route.FAVORITES -> empty(grid, vector(R.drawable.ic_heart_line), "No favorite coffee yet", "When there's coffee, it will appear here", "Add Now") { history.clear(); show(Route.EXPLORE) }
                 else -> notice(grid, "No items found", "Try another category or search.")
             }
             return
@@ -50,28 +50,32 @@ abstract class MenuScreen(app: MainActivity) : Screen(app) {
         list.chunked(2).forEach { pair ->
             val r = row().apply { gravity = Gravity.TOP }
             pair.forEachIndexed { index, item ->
-                val card = column().apply { setPadding(dp(8), dp(8), dp(8), dp(12)); background = bg(); elevation = dp(3).toFloat() }
-                val picture = photo(item.imageUrl, 128).apply { if (!item.inStock) alpha = 0.45f }
+                // Product card (Mainpage design): 8dp corners, a soft shadow, 128dp photo, 16sp name, 18sp price.
+                val card = column().apply { setPadding(dp(8), dp(8), dp(8), dp(12)); background = bg(Color.WHITE, 8); elevation = dp(3).toFloat() }
+                val picture = photo(item.imageUrl, 128).apply { background = bg(Color.rgb(249, 249, 249), 0); if (!item.inStock) alpha = 0.45f }
                 if (screen == Route.FAVORITES) card.addView(FrameLayout(context).apply {
                     addView(picture)
-                    addView(Icon(context, "heartfill", Color.rgb(240, 80, 80)).apply {
+                    addView(vector(R.drawable.ic_heart_fill).apply {
                         contentDescription = "Remove from favorites"
                         setOnClickListener { menu.favorites.remove(item.id); prefs.favorites = menu.favorites; show(Route.FAVORITES) }
-                    }, FrameLayout.LayoutParams(dp(36), dp(36), Gravity.TOP or Gravity.END))
+                    }, FrameLayout.LayoutParams(dp(20), dp(20), Gravity.TOP or Gravity.END).apply { setMargins(0, dp(8), dp(8), 0) })
                 }) else card.addView(picture)
                 space(card, 8)
-                card.addView(text(item.name, 16f, Palette.ink, true).apply { maxLines = 1 }); space(card, 4)
-                card.addView(text(item.categoryName, 11f, Palette.muted)); space(card, 6)
+                card.addView(text(item.name, 16f, Color.rgb(36, 36, 36), true).apply { maxLines = 1; leading(1.5f) }); space(card, 4)
+                card.addView(text(item.categoryName, 10f, Color.rgb(162, 162, 162))); space(card, 8)
                 val price = row()
-                price.addView(text(money(item.price), 19f, if (item.inStock) Color.BLACK else Palette.muted, true), LinearLayout.LayoutParams(0, -2, 1f))
-                if (item.inStock) price.addView(button("+") { open(item) }.apply { minHeight = dp(32) }, LinearLayout.LayoutParams(dp(32), dp(32)))
+                price.addView(text(money(item.price), 18f, if (item.inStock) Color.rgb(5, 5, 5) else Palette.muted, true).apply { leading(1.5f) }, LinearLayout.LayoutParams(0, -2, 1f))
+                if (item.inStock) price.addView(vector(R.drawable.ic_plus).apply {
+                    contentDescription = "Add"; background = bg(Palette.green, 8); setOnClickListener { open(item) }
+                }, LinearLayout.LayoutParams(dp(32), dp(32)))
                 else price.addView(text("Out of stock", 11f, Palette.red, true))
                 card.addView(price)
                 card.setOnClickListener { open(item) }
-                r.addView(card, LinearLayout.LayoutParams(0, -2, 1f).apply { if (index == 0) rightMargin = dp(16) })
+                r.addView(card, LinearLayout.LayoutParams(0, -2, 1f).apply { if (index == 0) rightMargin = dp(15) })
             }
             if (pair.size == 1) r.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
-            grid.addView(r); space(grid, 16)
+            // Room under the cards for their shadow; with it the rows sit 16dp apart (24dp on My Favorites, design 37).
+            r.setPadding(0, 0, 0, dp(6)); grid.addView(r); space(grid, if (screen == Route.FAVORITES) 18 else 10)
         }
     }
 

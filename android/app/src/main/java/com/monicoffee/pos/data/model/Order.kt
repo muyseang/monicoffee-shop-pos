@@ -1,5 +1,7 @@
 package com.monicoffee.pos.data.model
 
+import com.monicoffee.pos.ui.clock12
+
 data class OrderLine(
     val name: String,
     val options: String,
@@ -32,10 +34,10 @@ data class Order(
 ) {
     val itemCount get() = items.sumOf { it.quantity }
 
-    /** "Dine-in • Table 5" or "Pickup • 11:00". */
+    /** "Dine-in · Table 5" or "Pickup · 11:00 AM". */
     val place
-        get() = if (orderType == "dine_in") "$orderTypeLabel • Table $tableNumber"
-        else "$orderTypeLabel • ${pickupTime?.take(5) ?: ""}"
+        get() = if (orderType == "dine_in") "$orderTypeLabel · Table $tableNumber"
+        else "$orderTypeLabel · ${pickupTime?.take(5)?.let(::clock12) ?: ""}"
 }
 
 /** One line of a new order: the item, how many, and option id -> chosen value ("" for a plain add-on). */

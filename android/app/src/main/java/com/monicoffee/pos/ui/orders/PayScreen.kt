@@ -45,12 +45,7 @@ class PayScreen(app: MainActivity) : Screen(app) {
                 ?: "Scan the KH QR code with your banking app to complete payment. Once paid, tap below to upload a screenshot as proof — our staff will verify it before confirming your order.",
             13f, Palette.muted,
         ).apply { gravity = Gravity.CENTER; setLineSpacing(dp(3).toFloat(), 1f) })
-        if (shop != null && shop.qrImageUrl != null) {
-            space(b, 16)
-            if (shop.accountName.isNotBlank()) pair(b, "Account name", shop.accountName)
-            if (shop.khrAccount.isNotBlank()) { space(b, 8); pair(b, "KHR account", shop.khrAccount) }
-            if (shop.usdAccount.isNotBlank()) { space(b, 8); pair(b, "USD account", shop.usdAccount) }
-        }
+        // Design 40 shows only the QR, so the shop's account name and numbers aren't listed under it.
         if (o.canUploadProof) footer(if (o.paymentProofUrl == null) "I've Paid – Upload Screenshot" else "Replace Screenshot") {
             orders.proofBytes = null; orders.proofPreview = null; navigate(Route.UPLOAD_PROOF)
         } else footer("View My Order") { history.clear(); history.addLast(Route.ORDERS); show(Route.TRACK_ORDER) }

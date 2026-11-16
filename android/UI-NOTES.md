@@ -1,6 +1,6 @@
 # Moni Coffee Android client
 
-Native Android app (Kotlin, no third-party libraries) for customers of Moni Coffee. The screens follow the PNG references in `../Android-UI/Moni coffee` and all data comes from the Django backend in `../backend`.
+Native Android app (Kotlin, no third-party libraries) for customers of Moni Coffee. The screens follow the team's Figma design (Moni coffee) and all data comes from the Django backend in `../backend`.
 
 ## Code layout
 
@@ -36,7 +36,9 @@ To add a screen: create a class extending `Screen` in the matching `ui/` package
 | My Orders, Transaction Details | `GET /api/orders/?status=…`, `GET /api/orders/<id>/` (refreshed every 15 s), `POST /api/orders/<id>/cancel/` |
 | Profile, Personal Info | `GET` / `PATCH /api/auth/me/`, `POST /api/auth/logout/` |
 
-Kept on the phone only: the cart (in memory), favorites and the preferred payment method (SharedPreferences) — the backend has no API for them. The Cafe screen is sample content.
+Kept on the phone only: the cart (in memory) and favorites (SharedPreferences) — the backend has no API for them.
+
+Orders from the app are paid by QR only; the backend refuses cash from the app, and cash is taken at the counter (dashboard POS). If the owner hasn't set up QR payment, the app can't place orders. The Cafe screen is sample content.
 
 Prices and totals shown before checkout are for display; the server recalculates every order from its own prices.
 
@@ -47,9 +49,10 @@ The backend is used exactly as it is in `../backend` — no backend code or sett
 1. Start the backend as its README says (`python manage.py runserver`).
 2. Run the app:
    - **Emulator:** nothing to configure. The app's default server is `http://10.0.2.2:8000`, the emulator's address for this computer.
-   - **Real phone over USB:** run `adb reverse tcp:8000 tcp:8000`, then in the app tap **Server: … (change)** on the login screen and enter `http://127.0.0.1:8000`.
+   - **Real phone over USB:** run `adb reverse tcp:8000 tcp:8000`, then in the app long-press the **Moni Coffee** title on the login screen and enter `http://127.0.0.1:8000`.
    - **Real phone over Wi-Fi:** start the backend with `python manage.py runserver 0.0.0.0:8000`, add the computer's IP address to `ALLOWED_HOSTS` in your own `backend/.env` (a local file, not committed), and enter `http://<that IP>:8000` as the server in the app.
 3. Log in with the seeded client phone number `012345678`, or register a new number. There is no SMS gateway yet: while the backend runs with `DEBUG=True` it returns the code, and the app shows it on the verification screen.
+   To verify, the customer texts that code from their registered number to the shop phone **069 314 234** (`AppConfig.SHOP_SMS_NUMBER`) — **Open SMS App** fills it in. If the registered number is on another phone, that phone's camera can scan the QR on the same screen (`SMSTO:` format, drawn by `ui/widget/QrCode.kt`), which opens the same message. The Moni SMS Forwarder app on that phone confirms the code and this app signs in by itself. Without a real SMS (emulator), confirm the code with the Forwarder's **Manual OTP entry**.
 
 QR payment appears at checkout only after the owner enables it and uploads a QR image in the dashboard settings.
 
