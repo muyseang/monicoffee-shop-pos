@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.monicoffee.pos.MainActivity
 import com.monicoffee.pos.R
@@ -26,7 +27,7 @@ class HomeScreen(app: MainActivity) : MenuScreen(app) {
             addView(vector(R.drawable.ic_arrow_down), LinearLayout.LayoutParams(dp(14), dp(14)).apply { leftMargin = dp(4) })
         }); label.setOnClickListener { navigate(Route.CAFE) }
         loc.addView(label, LinearLayout.LayoutParams(0, -2, 1f))
-        loc.addView(vector(R.drawable.ic_cart).apply { contentDescription = "Cart"; setOnClickListener { navigate(Route.CART) } }, LinearLayout.LayoutParams(dp(24), dp(24)))
+        loc.addView(cartButton(), LinearLayout.LayoutParams(dp(32), dp(30)))
         h.addView(loc); space(h, 12)
         val names = listOf("All") + menu.categories.map { it.name }
         val pick = { name: String -> menu.categoryId = menu.categories.firstOrNull { it.name == name }?.id ?: 0; show(Route.HOME) }
@@ -50,5 +51,17 @@ class HomeScreen(app: MainActivity) : MenuScreen(app) {
         fillGrid(grid, visible())
         search.onChange { menu.query = it; fillGrid(grid, visible()) }
         nav(Route.HOME)
+    }
+
+    /** The cart icon, with a red dot counting the items once something is in the cart. */
+    private fun cartButton() = FrameLayout(context).apply {
+        val count = cart.sumOf { it.count }
+        contentDescription = if (count == 0) "Cart" else "Cart, $count item${if (count == 1) "" else "s"}"
+        setOnClickListener { navigate(Route.CART) }
+        addView(vector(R.drawable.ic_cart), FrameLayout.LayoutParams(dp(24), dp(24), Gravity.BOTTOM or Gravity.START))
+        if (count > 0) addView(text(if (count > 9) "9+" else "$count", 9f, Color.WHITE, true).apply {
+            gravity = Gravity.CENTER; includeFontPadding = false; minWidth = dp(16); setPadding(dp(3), 0, dp(3), 0)
+            background = bg(Palette.red, 100).apply { setStroke(dp(1), Color.rgb(31, 31, 31)) }
+        }, FrameLayout.LayoutParams(-2, dp(16), Gravity.TOP or Gravity.END))
     }
 }
