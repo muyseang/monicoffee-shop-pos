@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher icon's white M (the brand mark used in the design), in the 108 x 108 adaptive-icon grid. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFF" android:pathData="M34.5,71 L34.5,37 L44.5,37 L53.5,51.5 L62.5,37 L72.5,37 L72.5,71 L62.5,71 L62.5,54.5 L56.5,64 L50.5,64 L44.5,54.5 L44.5,71 Z" />
+</vector>
