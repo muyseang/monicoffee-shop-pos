@@ -137,6 +137,8 @@ def advance_order(order, expected_status):
     order = _lock(order)
     if order.status != expected_status or order.next_status is None:
         raise OrderError("This order was updated by someone else. Check its current status.")
+    if order.needs_payment_to_accept:
+        raise OrderError("Confirm the QR payment before accepting this order.")
     order.status = order.next_status
     fields = ["status", "updated_at"]
     # Cash is collected at the counter when the order is handed over.

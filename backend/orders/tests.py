@@ -263,6 +263,31 @@ class OrderDashboardTests(OrderTestCase):
         order.refresh_from_db()
         self.assertEqual(order.payment_status, Order.PaymentStatus.PAID)
 
+    def test_qr_order_is_accepted_only_after_payment_is_confirmed(self):
+        # Design A3: Accept Order stays disabled until the QR payment is confirmed.
+        PaymentSettings.objects.create(qr_enabled=True, qr_image=png_upload(), account_name="Muyseang Ung")
+        order = self.place(payment_method=Order.PaymentMethod.MANUAL_QR)
+        url = reverse("dashboard:order-detail", args=[order.pk])
+
+        page = self.client.get(url).content.decode()
+        self.assertRegex(page, r'<button type="submit" class="btn btn-primary"\s+disabled[^>]*>Accept Order</button>')
+        self.assertIn("Accept Order stays disabled until payment is confirmed.", page)
+
+        with self.assertRaisesMessage(OrderError, "Confirm the QR payment before accepting this order."):
+            advance_order(order, Order.Status.PENDING)
+        response = self.client.post(reverse("dashboard:order-advance", args=[order.pk]), {"from": "pending"}, follow=True)
+        self.assertContains(response, "Confirm the QR payment before accepting this order.")
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)
+
+        self.client.post(reverse("dashboard:order-confirm-payment", args=[order.pk]))
+        page = self.client.get(url).content.decode()
+        self.assertRegex(page, r'<button type="submit" class="btn btn-primary"\s*>Accept Order</button>')
+        self.assertNotIn("Accept Order stays disabled", page)
+        self.client.post(reverse("dashboard:order-advance", args=[order.pk]), {"from": "pending"})
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.ACCEPTED)
+
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
 class PosTests(OrderTestCase):
