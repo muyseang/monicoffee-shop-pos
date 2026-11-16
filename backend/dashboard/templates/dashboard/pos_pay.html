@@ -1,11 +1,11 @@
-{% load static %}
+{% load static dashboard_assets %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Scan to Pay — Moni Coffee</title>
-  <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+  <link rel="stylesheet" href="{% versioned_static 'dashboard/dashboard.css' %}">
 </head>
 <body class="customer-display">
   {# Turned toward the customer, so there's no dashboard chrome — only the staff bar at the bottom. #}
