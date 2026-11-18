@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import com.monicoffee.pos.MainActivity
 import com.monicoffee.pos.core.AppConfig
 import com.monicoffee.pos.ui.Screen
+import com.monicoffee.pos.ui.phoneLabel
 import com.monicoffee.pos.ui.navigation.Route
 import com.monicoffee.pos.ui.theme.Palette
 import com.monicoffee.pos.ui.widget.QrCode
@@ -29,7 +30,7 @@ class VerificationScreen(app: MainActivity) : Screen(app) {
         val t = auth.ticket ?: return show(Route.LOGIN)
         val expired = auth.secondsLeft() == 0
         header("OTP Verification"); val b = content(); space(b, 12)
-        b.addView(text("To verify, send an SMS with the code below to ${AppConfig.SHOP_SMS_NUMBER_LABEL}. It must be sent from your registered number ${auth.phone}.", 14f, Palette.muted).apply { letterSpacing = -0.01f; leading(20f / 14f) },
+        b.addView(text("To verify, send an SMS with the code below to ${phoneLabel(t.smsNumber)}. It must be sent from your registered number ${auth.phone}.", 14f, Palette.muted).apply { letterSpacing = -0.01f; leading(20f / 14f) },
             LinearLayout.LayoutParams(dp(272), -2)); space(b, 20)
         // The backend only includes the code in its reply while it runs in DEBUG mode (no SMS gateway yet).
         val code = if (expired) "" else t.debugCode ?: ""
@@ -49,12 +50,12 @@ class VerificationScreen(app: MainActivity) : Screen(app) {
             space(b, 16)
             b.addView(orDivider(), LinearLayout.LayoutParams(-1, dp(18))); space(b, 6)
             b.addView(text("Sending the SMS from a different phone? Scan this code there to continue.", 12f, Palette.grey).apply { gravity = Gravity.CENTER }); space(b, 14)
-            b.addView(qrCard(QrCode.encode("SMSTO:${AppConfig.SHOP_SMS_NUMBER}:$code")), LinearLayout.LayoutParams(dp(184), dp(184)).apply { gravity = Gravity.CENTER_HORIZONTAL })
+            b.addView(qrCard(QrCode.encode("SMSTO:${t.smsNumber}:$code")), LinearLayout.LayoutParams(dp(184), dp(184)).apply { gravity = Gravity.CENTER_HORIZONTAL })
             space(b, 34)
         } else space(b, 88)
         b.addView(button("Open SMS App") {
-            val sms = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${AppConfig.SHOP_SMS_NUMBER}")).putExtra("sms_body", code)
-            try { app.startActivity(sms); navigate(Route.VERIFYING) } catch (e: ActivityNotFoundException) { toast("No SMS app found. Send $code to ${AppConfig.SHOP_SMS_NUMBER_LABEL}.") }
+            val sms = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${t.smsNumber}")).putExtra("sms_body", code)
+            try { app.startActivity(sms); navigate(Route.VERIFYING) } catch (e: ActivityNotFoundException) { toast("No SMS app found. Send $code to ${phoneLabel(t.smsNumber)}.") }
         }, LinearLayout.LayoutParams(-1, dp(56)))
 
         var ticks = 0
