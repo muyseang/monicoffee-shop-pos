@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal
 
 from django import forms
@@ -6,7 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from django.db.models import Max
 
-from accounts.models import User
+from accounts.models import OtpSettings, User
 from accounts.serializers import normalize_phone
 from menu.models import Category, ItemOption, MenuItem
 from payments.models import PaymentSettings
@@ -305,6 +306,30 @@ ItemOptionFormSet = forms.inlineformset_factory(
     max_num=10,
     validate_max=True,
 )
+
+
+class OtpNumberForm(forms.ModelForm):
+    """The shop phone customers text their sign-in code to (Settings → Company OTP Number)."""
+
+    class Meta:
+        model = OtpSettings
+        fields = ["receiving_number"]
+        # form="otp-form": the field sits inside the payment settings form on the page but belongs to its own.
+        widgets = {"receiving_number": forms.TextInput(attrs={"placeholder": "e.g. 069 314 234", "inputmode": "tel", "form": "otp-form"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Shown grouped as people write it (069 314 234); saved as plain digits.
+        number = self.instance.receiving_number if not self.is_bound else ""
+        if re.fullmatch(r"\d{9,10}", number):
+            self.initial["receiving_number"] = f"{number[:3]} {number[3:6]} {number[6:]}"
+
+    def clean_receiving_number(self):
+        # Stored as digits (spaces and dashes dropped), like client phone numbers.
+        number = normalize_phone(self.cleaned_data["receiving_number"].strip())
+        if not re.fullmatch(r"\+?\d{8,15}", number):
+            raise forms.ValidationError("Enter a phone number of 8 to 15 digits, e.g. 069 314 234.")
+        return number
 
 
 class PaymentSettingsForm(forms.ModelForm):

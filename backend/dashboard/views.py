@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import OtpSettings, User
 from accounts.serializers import normalize_phone
 from menu.models import Category, MenuItem
 from orders.models import Order
@@ -26,6 +26,7 @@ from .forms import (
     ClientForm,
     ItemOptionFormSet,
     MenuItemForm,
+    OtpNumberForm,
     PaymentSettingsForm,
     RestockForm,
     StaffForm,
@@ -446,20 +447,27 @@ def menu_item_delete(request, pk):
 @super_admin_required
 def payment_settings(request):
     instance = PaymentSettings.load()
+    form = PaymentSettingsForm(instance=instance)
+    # The Company OTP Number card is its own form with its own Save button.
+    otp_form = OtpNumberForm(instance=OtpSettings.load())
 
-    if request.method == "POST":
+    if request.method == "POST" and request.POST.get("section") == "otp":
+        otp_form = OtpNumberForm(request.POST, instance=OtpSettings.load())
+        if otp_form.is_valid():
+            otp_form.save()
+            messages.success(request, "OTP receiving number saved. The app shows it from the next code request.")
+            return redirect("dashboard:settings")
+    elif request.method == "POST":
         form = PaymentSettingsForm(request.POST, request.FILES, instance=instance)
         if form.is_valid():
             with transaction.atomic():
                 form.save()
             messages.success(request, "Payment settings saved.")
             return redirect("dashboard:settings")
-    else:
-        form = PaymentSettingsForm(instance=instance)
 
     # A rejected POST has already copied its unsaved upload onto `instance`,
     # so show the current QR from a fresh read of the saved row.
-    return render(request, "dashboard/settings.html", {"form": form, "saved": PaymentSettings.load()})
+    return render(request, "dashboard/settings.html", {"form": form, "otp_form": otp_form, "saved": PaymentSettings.load()})
 
 
 # Orders and POS are day-to-day operations, open to both Super Admin and Staff.

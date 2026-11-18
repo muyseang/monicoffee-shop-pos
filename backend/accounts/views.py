@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import PhoneVerification, User
+from .models import OtpSettings, PhoneVerification, User
 from .permissions import IsClient
 from .serializers import (
     ClientProfileSerializer,
@@ -24,6 +24,8 @@ def _otp_response(otp):
         "request_id": str(otp.request_id),
         "message": "OTP sent.",
         "expires_in": PhoneVerification.TTL_SECONDS,
+        # Where the customer texts the code: the shop phone the Owner set in Settings.
+        "sms_number": OtpSettings.load().receiving_number,
     }
     if settings.DEBUG:
         # No SMS gateway is integrated in the MVP (see scope memo) — exposing the

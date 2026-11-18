@@ -111,8 +111,25 @@
             <span class="status-pill">Waiting for confirmation</span>
           </div>
         </div>
+
+        {# Its own form (#otp-form below): saving the number doesn't submit the payment settings. #}
+        <div class="panel">
+          <h3 style="margin-bottom:4px">Company OTP Number</h3>
+          <p class="cell-sub" style="margin:0 0 14px">Customers text their code to this number. It's shown in the app and matched by the backend for login.</p>
+          <div class="field">
+            <label for="{{ otp_form.receiving_number.id_for_label }}">OTP receiving number</label>
+            {{ otp_form.receiving_number }}
+            {% if otp_form.receiving_number.errors %}<div class="form-errors">{{ otp_form.receiving_number.errors.0 }}</div>{% endif %}
+          </div>
+          <button type="submit" class="btn btn-primary" form="otp-form">Save Number</button>
+        </div>
       </div>
     </div>
+  </form>
+
+  <form id="otp-form" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="section" value="otp">
   </form>
 
   <script>
