@@ -1,5 +1,6 @@
 package com.monicoffee.pos.data.api
 
+import com.monicoffee.pos.core.AppConfig
 import com.monicoffee.pos.data.model.Category
 import com.monicoffee.pos.data.model.ItemOption
 import com.monicoffee.pos.data.model.MenuItem
@@ -28,7 +29,9 @@ class ApiClient(var baseUrl: String, var token: String?) {
         val body = JSONObject().put("phone", phone)
         if (fullName != null) body.put("full_name", fullName)
         val o = JSONObject(send("POST", "/api/auth/$purpose/request-otp/", body, auth = false))
-        return OtpTicket(o.getString("request_id"), o.str("debug_code"), o.optInt("expires_in", 300))
+        // An older server doesn't send sms_number: fall back to the number the app shipped with.
+        val smsNumber = o.str("sms_number")?.takeIf { it.isNotBlank() } ?: AppConfig.DEFAULT_SHOP_SMS_NUMBER
+        return OtpTicket(o.getString("request_id"), o.str("debug_code"), o.optInt("expires_in", 300), smsNumber)
     }
 
     fun verifyOtp(purpose: String, phone: String, code: String): Session {
