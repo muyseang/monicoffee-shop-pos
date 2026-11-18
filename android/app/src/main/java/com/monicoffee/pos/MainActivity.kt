@@ -9,9 +9,11 @@ import com.monicoffee.pos.core.SessionManager
 import com.monicoffee.pos.core.TaskRunner
 import com.monicoffee.pos.data.api.ApiClient
 import com.monicoffee.pos.data.local.Preferences
+import com.monicoffee.pos.data.local.ProfilePhotos
 import com.monicoffee.pos.ui.navigation.Route
 import com.monicoffee.pos.ui.navigation.Router
 import com.monicoffee.pos.ui.orders.UploadProofScreen
+import com.monicoffee.pos.ui.profile.PersonalInfoScreen
 
 /**
  * The Moni Coffee customer app. This single activity only wires the parts together:
@@ -23,6 +25,8 @@ class MainActivity : Activity() {
         private set
     lateinit var api: ApiClient
         private set
+    lateinit var photos: ProfilePhotos
+        private set
 
     val state = AppState()
     val tasks = TaskRunner(this)
@@ -32,6 +36,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Preferences(this)
+        photos = ProfilePhotos(this)
         api = ApiClient(prefs.server, prefs.token)
         session.restore()
         state.menu.favorites.addAll(prefs.favorites)
@@ -68,13 +73,18 @@ class MainActivity : Activity() {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
         val picture = data?.data ?: return
-        if (requestCode != PICK_PROOF || resultCode != RESULT_OK) return
-        (router.screen(Route.UPLOAD_PROOF) as UploadProofScreen).onPicked(picture)
+        if (resultCode != RESULT_OK) return
+        when (requestCode) {
+            PICK_PROOF -> (router.screen(Route.UPLOAD_PROOF) as UploadProofScreen).onPicked(picture)
+            PICK_PHOTO -> (router.screen(Route.PERSONAL_INFO) as PersonalInfoScreen).onPicked(picture)
+        }
     }
 
     companion object {
         /** Request code of the payment-screenshot chooser. */
         const val PICK_PROOF = 41
+        /** Request code of the profile-photo chooser. */
+        const val PICK_PHOTO = 42
 
         private val FORMS = setOf(
             // Not VERIFICATION / VERIFYING: they only poll, and must poll again after the SMS app.

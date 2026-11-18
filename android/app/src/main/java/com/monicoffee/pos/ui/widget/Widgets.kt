@@ -3,6 +3,7 @@ package com.monicoffee.pos.ui.widget
 import android.app.AlertDialog
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -248,6 +249,13 @@ open class Widgets(val context: Context) {
         setImageResource(res); scaleType = ImageView.ScaleType.CENTER_CROP; background = bg(); clipToOutline = true
         layoutParams = LinearLayout.LayoutParams(-1, dp(height))
     }
+
+    /** A round profile picture: the customer's own photo, or their initials on green when there is none. */
+    fun avatar(photo: Bitmap?, initials: String, size: Int, textSize: Float): View =
+        if (photo != null) ImageView(context).apply {
+            setImageBitmap(photo); scaleType = ImageView.ScaleType.CENTER_CROP
+            background = bg(Palette.forest, size); clipToOutline = true; contentDescription = "Profile photo"
+        } else text(initials, textSize, Color.WHITE, true).apply { gravity = Gravity.CENTER; background = bg(Palette.forest, size) }
 
     /** A photo from the server; shows a plain grey tile until it has downloaded (or if there is none). */
     fun photo(url: String?, height: Int): ImageView = ImageView(context).apply {

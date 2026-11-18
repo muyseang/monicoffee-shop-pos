@@ -36,7 +36,7 @@ To add a screen: create a class extending `Screen` in the matching `ui/` package
 | My Orders, Transaction Details | `GET /api/orders/?status=…`, `GET /api/orders/<id>/` (refreshed every 15 s), `POST /api/orders/<id>/cancel/` |
 | Profile, Personal Info | `GET` / `PATCH /api/auth/me/`, `POST /api/auth/logout/` |
 
-Kept on the phone only: the cart (in memory) and favorites (SharedPreferences) — the backend has no API for them.
+Kept on the phone only: the cart (in memory), favorites (SharedPreferences) and the profile photo (a JPEG per account in the app's private files, chosen on Personal Info) — the backend has no API for them.
 
 Orders from the app are paid by QR only; the backend refuses cash from the app, and cash is taken at the counter (dashboard POS). If the owner hasn't set up QR payment, the app can't place orders. The Cafe screen is sample content.
 

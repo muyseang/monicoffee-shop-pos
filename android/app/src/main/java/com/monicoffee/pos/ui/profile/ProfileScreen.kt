@@ -22,7 +22,7 @@ class ProfileScreen(app: MainActivity) : Screen(app) {
         // The avatar (with its green dot) and the name, centred as a group.
         val identity = row().apply { gravity = Gravity.CENTER }
         identity.addView(FrameLayout(context).apply {
-            addView(text(state.initials, 22f, Color.WHITE, true).apply { gravity = Gravity.CENTER; background = bg(Palette.forest, 100) }, FrameLayout.LayoutParams(dp(64), dp(64)))
+            addView(avatar(app.photos.get(state.profile?.id), state.initials, 64, 22f), FrameLayout.LayoutParams(dp(64), dp(64)))
             addView(View(context).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Palette.green) } },
                 FrameLayout.LayoutParams(dp(24), dp(24)).apply { setMargins(dp(44), dp(44), 0, 0) })
         }, LinearLayout.LayoutParams(dp(68), dp(68)).apply { rightMargin = dp(12) })

@@ -2,6 +2,8 @@ package com.monicoffee.pos.data.image
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
@@ -41,6 +43,23 @@ object ImageLoader {
         } finally {
             connection.disconnect()
         }
+    }
+
+    /**
+     * Turns a phone camera photo the right way up. Cameras often save the picture sideways and
+     * only note the turn in the file's EXIF data, which decoding ignores.
+     */
+    fun upright(bitmap: Bitmap, bytes: ByteArray): Bitmap {
+        val degrees = try {
+            when (ExifInterface(bytes.inputStream()).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+        } catch (e: Exception) { 0f } // not a JPEG with EXIF data, e.g. a PNG
+        if (degrees == 0f) return bitmap
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(degrees) }, true)
     }
 
     /** Decodes at reduced resolution so a large photo never needs more than ~maxSide pixels a side. */
