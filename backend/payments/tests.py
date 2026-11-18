@@ -8,7 +8,7 @@ from django.urls import reverse
 from PIL import Image
 from rest_framework.authtoken.models import Token
 
-from accounts.models import User
+from accounts.models import OtpSettings, User
 
 from .models import PaymentSettings
 
@@ -53,6 +53,29 @@ class PaymentSettingsDashboardTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, "Manual QR Code Details")
         self.assertContains(response, "Live Preview")
+
+    def test_owner_sets_the_otp_receiving_number(self):
+        self.client.force_login(self.owner)
+        page = self.client.get(self.url)
+        self.assertContains(page, "Company OTP Number")
+        self.assertContains(page, 'value="069 314 234"')  # the default, shown grouped
+
+        response = self.client.post(self.url, {"section": "otp", "receiving_number": "012 345 678"}, follow=True)
+        self.assertContains(response, "OTP receiving number saved.")
+        self.assertEqual(OtpSettings.load().receiving_number, "012345678")
+        # Saving the number leaves the payment settings alone.
+        self.assertFalse(PaymentSettings.load().qr_enabled)
+
+    def test_otp_receiving_number_must_be_a_phone_number(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(self.url, {"section": "otp", "receiving_number": "shop phone"})
+        self.assertContains(response, "Enter a phone number of 8 to 15 digits")
+        self.assertEqual(OtpSettings.load().receiving_number, OtpSettings.DEFAULT_NUMBER)
+
+    def test_staff_cannot_change_the_otp_number(self):
+        self.client.force_login(self.staff)
+        self.assertEqual(self.client.post(self.url, {"section": "otp", "receiving_number": "012345678"}).status_code, 403)
+        self.assertEqual(OtpSettings.load().receiving_number, OtpSettings.DEFAULT_NUMBER)
 
     def test_cannot_enable_qr_without_image(self):
         self.client.force_login(self.owner)
