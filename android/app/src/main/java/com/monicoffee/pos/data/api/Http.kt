@@ -4,7 +4,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /** The Android emulator's name for the development computer's own 127.0.0.1. */
-internal const val EMULATOR_HOST = "10.0.2.2"
+internal const val EMULATOR_HOST = "192.168.18.100"
+    //"10.0.2.2"
+
 
 /**
  * Opens a connection to the backend. From the emulator the computer is reached as 10.0.2.2,
