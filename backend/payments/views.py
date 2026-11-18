@@ -1,6 +1,8 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.models import User
+
 from .models import PaymentSettings
 from .serializers import ManualQRSerializer
 
@@ -13,7 +15,8 @@ class PaymentMethodsView(APIView):
         payment_settings = PaymentSettings.load()
         return Response(
             {
-                "cash": {"enabled": True},
+                # App orders are QR only (see PlaceOrderSerializer); cash is taken at the counter.
+                "cash": {"enabled": request.user.role != User.Role.CLIENT},
                 "manual_qr": ManualQRSerializer(payment_settings, context={"request": request}).data,
             }
         )

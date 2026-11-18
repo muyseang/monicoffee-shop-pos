@@ -90,6 +90,6 @@ Clients sign up and log in by texting a 4-digit code to the shop phone. The **Mo
 
 ## Links
 - Moni SMS Forwarder (shop phone app): [APK](https://drive.google.com/file/d/1GYinhEnKm_JNQE4QqNoiGJ1F3G-Cv0le/view) · [source](https://github.com/muyseang/MoniSmsForwarder)
-- Postman collection: `docs/<name>.postman_collection.json`
+- Postman collection: `docs/MoniCoffee.postman_collection.json` (usage notes: `docs/api-usage.md`)
 - ERD: `docs/erd.png` (must match the running schema)
 - Video (view access checked from an incognito window): <link>

@@ -5,6 +5,11 @@ object AppConfig {
     /** The Android emulator reaches the development computer's localhost at 10.0.2.2. */
     const val DEFAULT_SERVER = "http://10.0.2.2:8000"
     const val CODE_LENGTH = 4 // PhoneVerification.CODE_LENGTH on the backend
+    /**
+     * The shop phone running Moni SMS Forwarder, where customers text their code. The server sends
+     * the current one with each code (Settings → Company OTP Number); this is only for an older server.
+     */
+    const val DEFAULT_SHOP_SMS_NUMBER = "069314234"
     const val MAX_QUANTITY = 50 // the backend's limit per order line
     const val MENU_MAX_AGE_MS = 30_000L
     const val ORDER_POLL_MS = 15_000L

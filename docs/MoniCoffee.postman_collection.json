@@ -1,0 +1,2141 @@
+{
+  "info": {
+    "name": "Moni Coffee API",
+    "description": "REST API of the Moni Coffee backend (Django + Django REST Framework, MySQL), used by the client Android app and the Moni SMS Forwarder.\n\nSee docs/api-usage.md for how to use this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "Authorization",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "Token {{token}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "phone",
+      "value": "0990000001"
+    },
+    {
+      "key": "full_name",
+      "value": "Postman Tester"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "request_id",
+      "value": ""
+    },
+    {
+      "key": "otp_code",
+      "value": ""
+    },
+    {
+      "key": "category_id",
+      "value": ""
+    },
+    {
+      "key": "item_id",
+      "value": ""
+    },
+    {
+      "key": "option_id",
+      "value": ""
+    },
+    {
+      "key": "option_choice",
+      "value": ""
+    },
+    {
+      "key": "addon_option_id",
+      "value": ""
+    },
+    {
+      "key": "order_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth (OTP)",
+      "description": "Clients sign up and log in with a phone number and a 4-digit code (no passwords).\n\n1. **request-otp** creates a code (valid 120 s; a new one can be requested after 30 s).\n2. The code is confirmed by **verify-otp** — normally sent by the shop's Moni SMS Forwarder phone, or typed by the user.\n3. The app that asked for the code polls **status** with its `request_id` until `verified` is true, and receives the token.\n\nRunning the requests in order sets `{{request_id}}`, `{{otp_code}}` and `{{token}}` for you.",
+      "item": [
+        {
+          "name": "Register – request OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/request-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                "request-otp"
+              ]
+            },
+            "description": "Start sign-up for a new client. The account stays inactive until the code is verified.\n\n`debug_code` is included only when the backend runs with `DEBUG=True`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"{{full_name}}\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 – code sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/request-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "request-otp"
+                  ]
+                },
+                "description": "Start sign-up for a new client. The account stays inactive until the code is verified.\n\n`debug_code` is included only when the backend runs with `DEBUG=True`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"{{full_name}}\",\n  \"phone\": \"{{phone}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"request_id\": \"e999d77c-7556-44c4-9af4-570bcfd080fd\",\n  \"message\": \"OTP sent.\",\n  \"expires_in\": 120,\n  \"debug_code\": \"1160\"\n}"
+            },
+            {
+              "name": "400 – already registered",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/request-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "request-otp"
+                  ]
+                },
+                "description": "Start sign-up for a new client. The account stays inactive until the code is verified.\n\n`debug_code` is included only when the backend runs with `DEBUG=True`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"{{full_name}}\",\n  \"phone\": \"{{phone}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"This phone number is already registered. Please log in.\"\n}"
+            },
+            {
+              "name": "429 – asked again too soon",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/request-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "request-otp"
+                  ]
+                },
+                "description": "Start sign-up for a new client. The account stays inactive until the code is verified.\n\n`debug_code` is included only when the backend runs with `DEBUG=True`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"{{full_name}}\",\n  \"phone\": \"{{phone}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Please wait 29s before requesting another code.\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('request_id', body.request_id);",
+                  "  // debug_code is only sent while the backend runs with DEBUG=True.",
+                  "  if (body.debug_code) pm.collectionVariables.set('otp_code', body.debug_code);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register – verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/verify-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                "verify-otp"
+              ]
+            },
+            "description": "Confirm the code. Activates the account and returns a token. This is the call the SMS Forwarder makes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otp_code}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 – verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/verify-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "verify-otp"
+                  ]
+                },
+                "description": "Confirm the code. Activates the account and returns a token. This is the call the SMS Forwarder makes.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otp_code}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b\",\n  \"user\": {\n    \"id\": 50,\n    \"full_name\": \"Sokha Chan\",\n    \"phone\": \"0990000999\",\n    \"address\": \"\"\n  }\n}"
+            },
+            {
+              "name": "400 – wrong code",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/verify-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "verify-otp"
+                  ]
+                },
+                "description": "Confirm the code. Activates the account and returns a token. This is the call the SMS Forwarder makes.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otp_code}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Incorrect code.\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().token) {",
+                  "  pm.collectionVariables.set('token', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register – status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/status/?request_id={{request_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "request_id",
+                  "value": "{{request_id}}"
+                }
+              ]
+            },
+            "description": "Polled by the app (every few seconds) after request-otp. Returns `{\"verified\": false}` until someone verifies the code (plus `\"expired\": true` once it has expired), then the token.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 – not yet verified",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/status/?request_id={{request_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "request_id",
+                      "value": "{{request_id}}"
+                    }
+                  ]
+                },
+                "description": "Polled by the app (every few seconds) after request-otp. Returns `{\"verified\": false}` until someone verifies the code (plus `\"expired\": true` once it has expired), then the token.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"verified\": false\n}"
+            },
+            {
+              "name": "200 – verified",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register/status/?request_id={{request_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "request_id",
+                      "value": "{{request_id}}"
+                    }
+                  ]
+                },
+                "description": "Polled by the app (every few seconds) after request-otp. Returns `{\"verified\": false}` until someone verifies the code (plus `\"expired\": true` once it has expired), then the token.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"verified\": true,\n  \"token\": \"9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b\",\n  \"user\": {\n    \"id\": 50,\n    \"full_name\": \"Sokha Chan\",\n    \"phone\": \"0990000999\",\n    \"address\": \"\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().token) {",
+                  "  pm.collectionVariables.set('token', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login – request OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/request-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                "request-otp"
+              ]
+            },
+            "description": "Start login for an existing, active client.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 – code sent",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/request-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "request-otp"
+                  ]
+                },
+                "description": "Start login for an existing, active client.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"request_id\": \"6b975a3d-9a66-4b7b-9805-05853a67bf23\",\n  \"message\": \"OTP sent.\",\n  \"expires_in\": 120,\n  \"debug_code\": \"1480\"\n}"
+            },
+            {
+              "name": "429 – asked again too soon",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/request-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "request-otp"
+                  ]
+                },
+                "description": "Start login for an existing, active client.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Please wait 29s before requesting another code.\"\n}"
+            },
+            {
+              "name": "404 – no account",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/request-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "request-otp"
+                  ]
+                },
+                "description": "Start login for an existing, active client.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"No account found for this phone number.\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('request_id', body.request_id);",
+                  "  // debug_code is only sent while the backend runs with DEBUG=True.",
+                  "  if (body.debug_code) pm.collectionVariables.set('otp_code', body.debug_code);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login – verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/verify-otp/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                "verify-otp"
+              ]
+            },
+            "description": "Confirm a login code and get a token. After 5 wrong tries the code is locked; request a new one.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otp_code}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 – verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/verify-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "verify-otp"
+                  ]
+                },
+                "description": "Confirm a login code and get a token. After 5 wrong tries the code is locked; request a new one.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otp_code}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"token\": \"9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b\",\n  \"user\": {\n    \"id\": 50,\n    \"full_name\": \"Sokha Chan\",\n    \"phone\": \"0990000999\",\n    \"address\": \"\"\n  }\n}"
+            },
+            {
+              "name": "400 – wrong code",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/verify-otp/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "verify-otp"
+                  ]
+                },
+                "description": "Confirm a login code and get a token. After 5 wrong tries the code is locked; request a new one.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"code\": \"{{otp_code}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Incorrect code.\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().token) {",
+                  "  pm.collectionVariables.set('token', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login – status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/status/?request_id={{request_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "request_id",
+                  "value": "{{request_id}}"
+                }
+              ]
+            },
+            "description": "Same as Register – status, for login codes.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 – not yet verified",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/status/?request_id={{request_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "request_id",
+                      "value": "{{request_id}}"
+                    }
+                  ]
+                },
+                "description": "Same as Register – status, for login codes.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"verified\": false\n}"
+            },
+            {
+              "name": "200 – verified",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login/status/?request_id={{request_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "request_id",
+                      "value": "{{request_id}}"
+                    }
+                  ]
+                },
+                "description": "Same as Register – status, for login codes.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"verified\": true,\n  \"token\": \"9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b\",\n  \"user\": {\n    \"id\": 50,\n    \"full_name\": \"Sokha Chan\",\n    \"phone\": \"0990000999\",\n    \"address\": \"\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().token) {",
+                  "  pm.collectionVariables.set('token', pm.response.json().token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Deletes the token on the server. The client must log in again."
+          },
+          "response": [
+            {
+              "name": "204 – logged out",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/logout/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "logout"
+                  ]
+                },
+                "description": "Deletes the token on the server. The client must log in again."
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 204) pm.collectionVariables.set('token', '');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Profile",
+      "description": "The logged-in client's own profile. Client tokens only; staff tokens get 403.",
+      "item": [
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/me/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 50,\n  \"full_name\": \"Sokha Chan\",\n  \"phone\": \"0990000999\",\n  \"address\": \"\"\n}"
+            },
+            {
+              "name": "401 – no or bad token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/me/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Authentication credentials were not provided.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update my profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Change `full_name` and/or `address`. `phone` is read-only (it is the login identity) and is ignored.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Sokha C.\",\n  \"address\": \"#12, St 289, Phnom Penh\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/me/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Change `full_name` and/or `address`. `phone` is read-only (it is the login identity) and is ignored.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"Sokha C.\",\n  \"address\": \"#12, St 289, Phnom Penh\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 50,\n  \"full_name\": \"Sokha C.\",\n  \"phone\": \"0990000999\",\n  \"address\": \"#12, St 289, Phnom Penh\"\n}"
+            },
+            {
+              "name": "400 – blank name",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/me/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Change `full_name` and/or `address`. `phone` is read-only (it is the login identity) and is ignored.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"Sokha C.\",\n  \"address\": \"#12, St 289, Phnom Penh\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"full_name\": [\n    \"Full name can't be empty.\"\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Menu",
+      "description": "Read-only menu. Hidden items (`is_available` off in the dashboard) are left out. Out-of-stock items are listed with `in_stock: false` so the app can grey them out.",
+      "item": [
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu/categories/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "categories"
+              ]
+            },
+            "description": "Sorted by `display_order`, then name."
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/menu/categories/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "menu",
+                    "categories"
+                  ]
+                },
+                "description": "Sorted by `display_order`, then name."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Hot Coffee\",\n    \"display_order\": 1\n  },\n  {\n    \"id\": 2,\n    \"name\": \"Iced Tea\",\n    \"display_order\": 2\n  },\n  {\n    \"id\": 3,\n    \"name\": \"Pastry\",\n    \"display_order\": 3\n  },\n  {\n    \"id\": 8,\n    \"name\": \"Iced Coffee\",\n    \"display_order\": 5\n  },\n  {\n    \"id\": 7,\n    \"name\": \"Tea\",\n    \"display_order\": 5\n  }\n]"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const c = pm.response.json(); if (c.length) pm.collectionVariables.set('category_id', c[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List menu items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu/items/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "{{category_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Optional filters: `category` (category id) and `q` (search by name). Disable them to list everything.\n\n`price` and `extra_price` are strings with 2 decimals. `options` with an empty `choices` list are simple add-ons (e.g. Extra Shot); otherwise one choice must be picked."
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/menu/items/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "menu",
+                    "items"
+                  ],
+                  "query": [
+                    {
+                      "key": "category",
+                      "value": "{{category_id}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "q",
+                      "value": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Optional filters: `category` (category id) and `q` (search by name). Disable them to list everything.\n\n`price` and `extra_price` are strings with 2 decimals. `options` with an empty `choices` list are simple add-ons (e.g. Extra Shot); otherwise one choice must be picked."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": 48,\n    \"name\": \"Cappuccino\",\n    \"description\": \"Espresso, steamed milk and thick foam\",\n    \"price\": \"3.00\",\n    \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\",\n    \"category\": {\n      \"id\": 1,\n      \"name\": \"Hot Coffee\",\n      \"display_order\": 1\n    },\n    \"in_stock\": true,\n    \"options\": [\n      {\n        \"id\": 13,\n        \"name\": \"Size\",\n        \"choices\": [\n          \"Small\",\n          \"Medium\",\n          \"Large\"\n        ],\n        \"extra_price\": \"0.00\"\n      },\n      {\n        \"id\": 14,\n        \"name\": \"Extra Shot\",\n        \"choices\": [],\n        \"extra_price\": \"0.50\"\n      },\n      {\n        \"id\": 15,\n        \"name\": \"Syrup\",\n        \"choices\": [\n          \"Vanilla\",\n          \"Caramel\",\n          \"Hazelnut\"\n        ],\n        \"extra_price\": \"0.25\"\n      }\n    ]\n  },\n  {\n    \"id\": 2,\n    \"name\": \"Americano\",\n    \"description\": \"Espresso with hot water\",\n    \"price\": \"2.50\",\n    \"image_url\": \"http://127.0.0.1:8000/media/menu/112233.png\",\n    \"category\": {\n      \"id\": 1,\n      \"name\": \"Hot Coffee\",\n      \"display_order\": 1\n    },\n    \"in_stock\": true,\n    \"options\": []\n  }\n]"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Remember an in-stock item that has options, for the order requests below.",
+                  "const items = pm.response.json();",
+                  "const item = items.find(i => i.in_stock && i.options.some(o => o.choices.length)) || items.find(i => i.in_stock);",
+                  "if (item) {",
+                  "  pm.collectionVariables.set('item_id', item.id);",
+                  "  const choice = item.options.find(o => o.choices.length);",
+                  "  const addOn = item.options.find(o => !o.choices.length);",
+                  "  if (choice) { pm.collectionVariables.set('option_id', choice.id); pm.collectionVariables.set('option_choice', choice.choices[0]); }",
+                  "  if (addOn) pm.collectionVariables.set('addon_option_id', addOn.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get menu item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu/items/{{item_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "menu",
+                "items",
+                "{{item_id}}"
+              ]
+            },
+            "description": "404 if the item is hidden or doesn't exist."
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/menu/items/{{item_id}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "menu",
+                    "items",
+                    "{{item_id}}"
+                  ]
+                },
+                "description": "404 if the item is hidden or doesn't exist."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 48,\n  \"name\": \"Cappuccino\",\n  \"description\": \"Espresso, steamed milk and thick foam\",\n  \"price\": \"3.00\",\n  \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\",\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Hot Coffee\",\n    \"display_order\": 1\n  },\n  \"in_stock\": true,\n  \"options\": [\n    {\n      \"id\": 13,\n      \"name\": \"Size\",\n      \"choices\": [\n        \"Small\",\n        \"Medium\",\n        \"Large\"\n      ],\n      \"extra_price\": \"0.00\"\n    },\n    {\n      \"id\": 14,\n      \"name\": \"Extra Shot\",\n      \"choices\": [],\n      \"extra_price\": \"0.50\"\n    },\n    {\n      \"id\": 15,\n      \"name\": \"Syrup\",\n      \"choices\": [\n        \"Vanilla\",\n        \"Caramel\",\n        \"Hazelnut\"\n      ],\n      \"extra_price\": \"0.25\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Payments",
+      "description": "Which payment methods checkout may offer. Any logged-in user.",
+      "item": [
+        {
+          "name": "Payment methods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/payments/methods/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "methods"
+              ]
+            },
+            "description": "`manual_qr.enabled` is false until the owner turns QR payments on in the dashboard. Show the QR image and account numbers on the payment screen."
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/payments/methods/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "payments",
+                    "methods"
+                  ]
+                },
+                "description": "`manual_qr.enabled` is false until the owner turns QR payments on in the dashboard. Show the QR image and account numbers on the payment screen."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"cash\": {\n    \"enabled\": false\n  },\n  \"manual_qr\": {\n    \"enabled\": true,\n    \"qr_image_url\": \"http://127.0.0.1:8000/media/payments/112233.png\",\n    \"account_name\": \"Moni Coffee\",\n    \"khr_account_number\": \"000 000 001\",\n    \"usd_account_number\": \"000 000 002\",\n    \"instructions\": \"Scan the QR with your banking app and pay the exact amount. Staff will confirm once payment is received.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Orders",
+      "description": "Client orders. Every request only sees the caller's own orders; another client's order id returns 404.\n\n**Values**\n- `order_type`: `dine_in` (needs `table_number`) or `pickup` (needs `pickup_time`, `HH:MM`)\n- `payment_method`: `manual_qr` (app orders are QR-only and need QR set up in the dashboard; `cash` is rejected with 400 — cash is taken at the counter)\n- `status`: `pending` → `accepted` → `preparing` → `ready` → `completed`, or `rejected` / `cancelled`\n- `payment_status`: `not_paid`, `awaiting` (screenshot uploaded, staff checking), `paid`\n\nPrices are always calculated by the server from the database; the app only sends item ids, quantities and chosen options.",
+      "item": [
+        {
+          "name": "Place order – dine-in, QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            },
+            "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 – created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders"
+                  ]
+                },
+                "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": true,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n}"
+            },
+            {
+              "name": "400 – missing table number",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders"
+                  ]
+                },
+                "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"table_number\": [\n    \"Table number is required for dine-in orders.\"\n  ]\n}"
+            },
+            {
+              "name": "400 – out of stock",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders"
+                  ]
+                },
+                "description": "Stock is checked and reduced in the same transaction. Up to 30 lines, quantity 1–50 each. `choice` is required for options that have choices and omitted for add-ons.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"order_type\": \"dine_in\",\n  \"table_number\": \"5\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 2,\n      \"options\": [\n        {\n          \"option\": \"{{option_id}}\",\n          \"choice\": \"{{option_choice}}\"\n        },\n        {\n          \"option\": \"{{addon_option_id}}\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"Mocha is out of stock.\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('order_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Place order – pickup, QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            },
+            "description": "Pickup order paid by bank QR transfer. Fails with 400 if QR payments are turned off.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_type\": \"pickup\",\n  \"pickup_time\": \"10:30\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 – created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders"
+                  ]
+                },
+                "description": "Pickup order paid by bank QR transfer. Fails with 400 if QR payments are turned off.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"order_type\": \"pickup\",\n  \"pickup_time\": \"10:30\",\n  \"payment_method\": \"manual_qr\",\n  \"items\": [\n    {\n      \"menu_item\": \"{{item_id}}\",\n      \"quantity\": 1\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 23,\n  \"number\": \"MC-0023\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"pickup\",\n  \"order_type_label\": \"Pickup\",\n  \"table_number\": \"\",\n  \"pickup_time\": \"10:30:00\",\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"awaiting\",\n  \"payment_status_label\": \"Waiting for confirmation\",\n  \"payment_proof_url\": null,\n  \"total\": \"3.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"\",\n      \"unit_price\": \"3.00\",\n      \"quantity\": 1,\n      \"line_total\": \"3.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": true,\n  \"created_at\": \"2026-11-15T10:45:26.729237+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.729241+07:00\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('order_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List my orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/orders/?status=active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Newest first. Optional `status` filter matches the app's tabs: `active` (pending, accepted, preparing, ready), `completed`, `cancelled` (rejected or cancelled)."
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/?status=active",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "active"
+                    }
+                  ]
+                },
+                "description": "Newest first. Optional `status` filter matches the app's tabs: `active` (pending, accepted, preparing, ready), `completed`, `cancelled` (rejected or cancelled)."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": 22,\n    \"number\": \"MC-0022\",\n    \"status\": \"pending\",\n    \"status_label\": \"Pending\",\n    \"order_type\": \"dine_in\",\n    \"order_type_label\": \"Dine-in\",\n    \"table_number\": \"5\",\n    \"pickup_time\": null,\n    \"payment_method\": \"manual_qr\",\n    \"payment_method_label\": \"Manual QR\",\n    \"payment_status\": \"not_paid\",\n    \"payment_status_label\": \"Not paid\",\n    \"payment_proof_url\": null,\n    \"total\": \"7.00\",\n    \"rejection_reason\": \"\",\n    \"items\": [\n      {\n        \"name\": \"Cappuccino\",\n        \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n        \"unit_price\": \"3.50\",\n        \"quantity\": 2,\n        \"line_total\": \"7.00\",\n        \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n      }\n    ],\n    \"can_cancel\": true,\n    \"can_upload_proof\": true,\n    \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n    \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "description": "Poll every ~15 s to track status. `rejection_reason` is filled when staff reject the order."
+          },
+          "response": [
+            {
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/{{order_id}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders",
+                    "{{order_id}}"
+                  ]
+                },
+                "description": "Poll every ~15 s to track status. `rejection_reason` is filled when staff reject the order."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": true,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.712329+07:00\"\n}"
+            },
+            {
+              "name": "404 – not yours / doesn't exist",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/{{order_id}}/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders",
+                    "{{order_id}}"
+                  ]
+                },
+                "description": "Poll every ~15 s to track status. `rejection_reason` is filled when staff reject the order."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"No Order matches the given query.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload payment screenshot",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/payment-proof/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "payment-proof"
+              ]
+            },
+            "description": "For `manual_qr` orders while `can_upload_proof` is true. Multipart field `image`: PNG or JPG, max 2 MB. Uploading again replaces the earlier screenshot. Sets `payment_status` to `awaiting`.\n\nIn Postman, choose a file for the `image` field before sending.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 – uploaded",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/{{order_id}}/payment-proof/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders",
+                    "{{order_id}}",
+                    "payment-proof"
+                  ]
+                },
+                "description": "For `manual_qr` orders while `can_upload_proof` is true. Multipart field `image`: PNG or JPG, max 2 MB. Uploading again replaces the earlier screenshot. Sets `payment_status` to `awaiting`.\n\nIn Postman, choose a file for the `image` field before sending.",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 23,\n  \"number\": \"MC-0023\",\n  \"status\": \"pending\",\n  \"status_label\": \"Pending\",\n  \"order_type\": \"pickup\",\n  \"order_type_label\": \"Pickup\",\n  \"table_number\": \"\",\n  \"pickup_time\": \"10:30:00\",\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"awaiting\",\n  \"payment_status_label\": \"Pending review\",\n  \"payment_proof_url\": \"http://127.0.0.1:8000/media/payment_proofs/proof.png\",\n  \"total\": \"3.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"\",\n      \"unit_price\": \"3.00\",\n      \"quantity\": 1,\n      \"line_total\": \"3.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": true,\n  \"can_upload_proof\": true,\n  \"created_at\": \"2026-11-15T10:45:26.729237+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.804279+07:00\"\n}"
+            },
+            {
+              "name": "400 – not a QR order",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/{{order_id}}/payment-proof/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders",
+                    "{{order_id}}",
+                    "payment-proof"
+                  ]
+                },
+                "description": "For `manual_qr` orders while `can_upload_proof` is true. Multipart field `image`: PNG or JPG, max 2 MB. Uploading again replaces the earlier screenshot. Sets `payment_status` to `awaiting`.\n\nIn Postman, choose a file for the `image` field before sending.",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"This order has no QR payment waiting for a screenshot.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/cancel/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "cancel"
+              ]
+            },
+            "description": "Only while `status` is `pending` (`can_cancel: true`). Stock is returned."
+          },
+          "response": [
+            {
+              "name": "200 – cancelled",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/{{order_id}}/cancel/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders",
+                    "{{order_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Only while `status` is `pending` (`can_cancel: true`). Stock is returned."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 22,\n  \"number\": \"MC-0022\",\n  \"status\": \"cancelled\",\n  \"status_label\": \"Cancelled\",\n  \"order_type\": \"dine_in\",\n  \"order_type_label\": \"Dine-in\",\n  \"table_number\": \"5\",\n  \"pickup_time\": null,\n  \"payment_method\": \"manual_qr\",\n  \"payment_method_label\": \"Manual QR\",\n  \"payment_status\": \"not_paid\",\n  \"payment_status_label\": \"Not paid\",\n  \"payment_proof_url\": null,\n  \"total\": \"7.00\",\n  \"rejection_reason\": \"\",\n  \"items\": [\n    {\n      \"name\": \"Cappuccino\",\n      \"options\": \"Size: Medium \\u00b7 Extra Shot\",\n      \"unit_price\": \"3.50\",\n      \"quantity\": 2,\n      \"line_total\": \"7.00\",\n      \"image_url\": \"http://127.0.0.1:8000/media/menu/demo-cappuccino.jpg\"\n    }\n  ],\n  \"can_cancel\": false,\n  \"can_upload_proof\": false,\n  \"created_at\": \"2026-11-15T10:45:26.712323+07:00\",\n  \"updated_at\": \"2026-11-15T10:45:26.723012+07:00\"\n}"
+            },
+            {
+              "name": "400 – too late",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/orders/{{order_id}}/cancel/",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "orders",
+                    "{{order_id}}",
+                    "cancel"
+                  ]
+                },
+                "description": "Only while `status` is `pending` (`can_cancel: true`). Stock is returned."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"detail\": \"This order is already cancelled and can't be cancelled.\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

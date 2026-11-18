@@ -42,14 +42,14 @@ class Preferences(context: Context) {
         get() = store.getStringSet(FAVORITES, emptySet())!!.mapNotNull { it.toIntOrNull() }.toSet()
         set(value) = store.edit().putStringSet(FAVORITES, value.map { it.toString() }.toSet()).apply()
 
-    /** The payment method pre-selected at checkout. */
-    var payment: String
-        get() = store.getString(PAYMENT, "cash")!!
-        set(value) = store.edit().putString(PAYMENT, value).apply()
-
     var onboarded: Boolean
         get() = store.getBoolean(ONBOARDED, false)
         set(value) = store.edit().putBoolean(ONBOARDED, value).apply()
+
+    /** What the customer searched for on Explore, newest first. */
+    var recentSearches: List<String>
+        get() = store.getString(RECENT_SEARCHES, "")!!.split('\n').filter { it.isNotBlank() }
+        set(value) = store.edit().putString(RECENT_SEARCHES, value.joinToString("\n")).apply()
 
     private companion object {
         const val SERVER = "server"
@@ -59,7 +59,7 @@ class Preferences(context: Context) {
         const val PHONE = "phone"
         const val ADDRESS = "address"
         const val FAVORITES = "favorites"
-        const val PAYMENT = "payment"
         const val ONBOARDED = "onboarded"
+        const val RECENT_SEARCHES = "recent_searches"
     }
 }

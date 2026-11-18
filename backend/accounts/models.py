@@ -57,3 +57,30 @@ class PhoneVerification(models.Model):
 
     def __str__(self):
         return f"{self.phone} [{self.purpose}] {'used' if self.is_used else 'active'}"
+
+
+class OtpSettings(models.Model):
+    """The shop phone that customers text their sign-in code to — a single row, edited by the Owner
+    in Settings. The Moni SMS Forwarder runs on that phone; the app shows the number with each code."""
+
+    DEFAULT_NUMBER = "069314234"
+
+    receiving_number = models.CharField(max_length=20, default=DEFAULT_NUMBER)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "OTP settings"
+        verbose_name_plural = "OTP settings"
+
+    @classmethod
+    def load(cls):
+        # pk=1 is the only row; created with the default number the first time it's read.
+        settings, _ = cls.objects.get_or_create(pk=1)
+        return settings
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "OTP settings"

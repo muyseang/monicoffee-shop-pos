@@ -33,7 +33,9 @@
       <form method="post" action="{% url 'dashboard:order-advance' order.pk %}">
         {% csrf_token %}
         <input type="hidden" name="from" value="{{ order.status }}">
-        <button type="submit" class="btn btn-primary">{{ advance_label }}</button>
+        {# A QR order waits for Confirm QR Payment before it can be accepted (design A3). #}
+        <button type="submit" class="btn btn-primary"
+                {% if order.needs_payment_to_accept %}disabled title="Confirm the QR payment first"{% endif %}>{{ advance_label }}</button>
       </form>
     {% endif %}
   </div>
@@ -110,19 +112,57 @@
         {% if order.payment_proof %}
           <div class="summary-row">
             <span>Payment Screenshot</span>
-            <a class="action-link primary" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener" style="margin-right:0">View Full Size</a>
+            <a class="action-link primary" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener" style="margin-right:0" data-preview>View Full Size</a>
           </div>
-          <a class="proof-thumb" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener">
-            <img src="{% static 'dashboard/icons/image.svg' %}" width="32" height="32" alt="">
+          {# The screenshot itself, so staff can check the amount at a glance; click for the full-size preview. #}
+          <a class="proof-thumb" href="{{ order.payment_proof.url }}" target="_blank" rel="noopener" data-preview>
+            {# Sized here too, so a phone photo can never fill the page even before the stylesheet loads. #}
+            <img class="proof-image" src="{{ order.payment_proof.url }}" alt="Payment screenshot for order #{{ order.number }}"
+                 style="width:100%;height:130px;object-fit:contain"
+                 onerror="this.hidden = true; this.nextElementSibling.hidden = false;">
+            <img src="{% static 'dashboard/icons/image.svg' %}" width="32" height="32" alt="" hidden>
             <strong>{{ order.payment_proof.name|cut:"payment_proofs/" }}</strong>
-            <span class="cell-sub">{{ order.payment_proof.size|filesizeformat }}</span>
+            <span class="cell-sub">{{ order.payment_proof.size|filesizeformat }} &middot; click to preview</span>
           </a>
+
+          {# Fixed-size pop-up: the screenshot fits inside it whatever its own size; Close shuts it. #}
+          <div id="proof-modal" class="modal-overlay" hidden>
+            <div class="proof-modal-card" role="dialog" aria-modal="true" aria-labelledby="proof-modal-title">
+              <div class="proof-modal-bar">
+                <strong id="proof-modal-title">Payment Screenshot</strong>
+                <span class="cell-sub">Order #{{ order.number }} &middot; ${{ order.total|floatformat:2 }}</span>
+              </div>
+              <div class="proof-modal-image">
+                <img src="{{ order.payment_proof.url }}" alt="Payment screenshot for order #{{ order.number }}"
+                     style="width:100%;height:100%;max-height:560px;object-fit:contain">
+              </div>
+              <div class="proof-modal-actions">
+                <button type="button" class="btn btn-ghost" data-close-preview>Close</button>
+              </div>
+            </div>
+          </div>
+          <script>
+            // Preview the screenshot on this page; the links still open it in a new tab without JavaScript.
+            const proofModal = document.getElementById('proof-modal');
+            const closeButton = proofModal.querySelector('[data-close-preview]');
+            const closePreview = () => { proofModal.hidden = true; };
+            document.querySelectorAll('[data-preview]').forEach((link) => link.addEventListener('click', (event) => {
+              event.preventDefault();
+              proofModal.hidden = false;
+              closeButton.focus();
+            }));
+            closeButton.addEventListener('click', closePreview);
+            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePreview(); });
+          </script>
         {% endif %}
         {% if order.can_confirm_payment %}
           <form method="post" action="{% url 'dashboard:order-confirm-payment' order.pk %}" style="margin-top:16px">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline btn-block">Confirm QR Payment</button>
           </form>
+        {% endif %}
+        {% if order.needs_payment_to_accept %}
+          <p class="payment-note">Accept Order stays disabled until payment is confirmed.</p>
         {% endif %}
       </div>
     </div>

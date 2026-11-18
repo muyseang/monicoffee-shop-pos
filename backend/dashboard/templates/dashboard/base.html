@@ -1,11 +1,11 @@
-{% load static %}
+{% load static dashboard_assets %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Moni Coffee Admin{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'dashboard/dashboard.css' %}">
+  <link rel="stylesheet" href="{% versioned_static 'dashboard/dashboard.css' %}">
 </head>
 <body>
   <div class="shell">
@@ -20,7 +20,12 @@
 
       <div class="nav-label">Operations</div>
       {% if user.is_authenticated %}
-        <a class="nav-item {% block nav_orders_active %}{% endblock %}" href="{% url 'dashboard:order-list' %}">Orders</a>
+        <a class="nav-item {% block nav_orders_active %}{% endblock %}" href="{% url 'dashboard:order-list' %}">
+          Orders
+          {# Orders still Pending (any day); kept in the page when 0 so the refresh can show it again. #}
+          <span class="nav-count" id="pending-count" title="Orders waiting to be accepted"
+                {% if not pending_order_count %}hidden{% endif %}>{{ pending_order_count|default:0 }}</span>
+        </a>
         <a class="nav-item {% block nav_pos_active %}{% endblock %}" href="{% url 'dashboard:pos' %}">POS</a>
       {% else %}
         <div class="nav-item disabled">Orders</div>
@@ -87,6 +92,25 @@
       {% block content %}{% endblock %}
     </main>
   </div>
-  <script src="{% static 'dashboard/live-search.js' %}"></script>
+  <script src="{% versioned_static 'dashboard/live-search.js' %}"></script>
+  {% if user.is_authenticated %}
+    <script>
+      // Keep the sidebar's Pending count current on every page, every 15 seconds
+      // (like the order table); skipped while the tab is hidden.
+      setInterval(async () => {
+        if (document.hidden) return;
+        try {
+          const response = await fetch('{% url "dashboard:order-pending-count" %}', { headers: { 'X-Requested-With': 'fetch' } });
+          if (!response.ok) return;
+          const { pending } = await response.json();
+          const badge = document.getElementById('pending-count');
+          badge.textContent = pending;
+          badge.hidden = pending === 0;
+        } catch (error) {
+          // Offline for a moment — the next tick tries again.
+        }
+      }, 15000);
+    </script>
+  {% endif %}
 </body>
 </html>

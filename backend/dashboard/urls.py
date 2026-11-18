@@ -33,6 +33,7 @@ urlpatterns = [
     path("stock/<int:pk>/hide/", views.stock_set_visible, {"visible": False}, name="stock-hide"),
     path("settings/", views.payment_settings, name="settings"),
     path("orders/", views.order_list, name="order-list"),
+    path("orders/pending-count/", views.pending_order_count_view, name="order-pending-count"),
     path("orders/<int:pk>/", views.order_detail, name="order-detail"),
     path("orders/<int:pk>/advance/", views.order_advance, name="order-advance"),
     path("orders/<int:pk>/reject/", views.order_reject, name="order-reject"),

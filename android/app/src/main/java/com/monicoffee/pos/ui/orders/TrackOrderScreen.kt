@@ -6,6 +6,7 @@ import android.widget.LinearLayout
 import com.monicoffee.pos.MainActivity
 import com.monicoffee.pos.core.AppConfig
 import com.monicoffee.pos.ui.Screen
+import com.monicoffee.pos.ui.clock12
 import com.monicoffee.pos.ui.countLabel
 import com.monicoffee.pos.ui.money
 import com.monicoffee.pos.ui.navigation.Route
@@ -19,35 +20,37 @@ class TrackOrderScreen(app: MainActivity) : Screen(app) {
         if (!quiet) refresh()
         every(AppConfig.ORDER_POLL_MS) { refresh() }
 
-        header("Track Order"); val b = content()
+        // Designs 27–27.4 and 46: summary card, timeline, then the order recap, 20dp apart.
+        header("Track Order"); val b = content(); space(b, 8)
         b.addView(row().apply {
-            background = bg(Palette.mint, 12); setPadding(dp(16), dp(14), dp(16), dp(14))
+            background = bg(Color.rgb(242, 248, 245), 12); setPadding(dp(16), dp(14), dp(16), dp(14))
             addView(column().apply {
-                addView(text("Order #${o.number}", 16f, Palette.ink, true)); space(this, 2); addView(text(o.place, 12f, Color.GRAY))
+                addView(text("Order #${o.number}", 16f, INK, true)); space(this, 2); addView(text(o.place, 12f, Color.rgb(89, 89, 89)))
             }, LinearLayout.LayoutParams(0, -2, 1f))
-            addView(statusPill(o))
-        }); space(b, 22)
-        b.addView(text("Order Status", 16f, Palette.ink, true)); space(b, 14)
+            addView(statusPill(o).apply { textSize = 12f; setPadding(dp(12), dp(5), dp(12), dp(5)) })
+        }); space(b, 20)
+        b.addView(text("Order Status", 16f, INK, true)); space(b, 20)
         val dineIn = o.orderType == "dine_in"
-        val time = o.createdAt.drop(11).take(5)
+        val time = clock12(o.createdAt.drop(11).take(5))
         val rejected = o.status == "rejected"
         if (rejected || o.status == "cancelled") {
-            val stop = if (rejected) Color.rgb(222, 68, 60) else Color.GRAY
-            step(b, "stepdone", Palette.green, "Pending", "Order received • $time", Palette.ink, Palette.muted, stop)
-            step(b, "stepx", stop, o.statusLabel, if (rejected) "Declined by Moni Coffee" else "Cancelled by you", if (rejected) Palette.red else Palette.ink, Palette.muted, null)
-            space(b, 16)
+            val stop = if (rejected) Color.rgb(222, 68, 60) else Color.rgb(107, 114, 128)
+            step(b, "stepdone", Palette.green, "Pending", "Order received · $time", INK, Palette.muted, stop)
+            step(b, "stepx", stop, o.statusLabel, if (rejected) "Declined by Moni Coffee" else "Cancelled by you", if (rejected) Palette.red else stop, Palette.muted, null)
+            space(b, 20)
             b.addView(column().apply {
-                setPadding(dp(14), dp(12), dp(14), dp(12)); background = if (rejected) bg(Palette.pink, 10, Color.rgb(240, 170, 165)) else bg(Palette.soft, 10, Palette.line)
-                addView(text(if (rejected) "Reason from Moni Coffee" else "Cancelled by you", 12f, if (rejected) Palette.red else Color.GRAY, true)); space(this, 4)
+                setPadding(dp(16), dp(16), dp(16), dp(16))
+                background = if (rejected) bg(Palette.pink, 12, Color.rgb(240, 170, 165)) else bg(Color.rgb(245, 245, 245), 12, Color.rgb(224, 224, 224))
+                addView(text(if (rejected) "Reason from Moni Coffee" else "Cancelled by you", 12f, if (rejected) Palette.red else stop, true)); space(this, 6)
                 addView(text(
                     if (rejected) o.rejectionReason.ifBlank { "The shop couldn't take this order." }
-                    else "You cancelled this order while it was still Pending. The items have been returned to stock.",
-                    14f, Palette.ink,
+                    else "You cancelled this order while it was still Pending. The items have been returned to stock and you have not been charged.",
+                    14f, INK,
                 ))
             })
         } else {
             val steps = listOf(
-                Triple("pending", "Pending", if (o.status == "pending") "Waiting for Moni Coffee to accept • $time" else "Order received • $time"),
+                Triple("pending", "Pending", if (o.status == "pending") "Waiting for Moni Coffee to accept · $time" else "Order received · $time"),
                 Triple("accepted", "Accepted", "Confirmed by Moni Coffee"),
                 Triple("preparing", "Preparing", if (o.status == "preparing") "Our barista is making your drinks" else "Our barista makes your drinks"),
                 Triple("ready", "Ready", if (dineIn) "We'll bring it to your table" else "We'll let you know when it's ready"),
@@ -65,14 +68,14 @@ class TrackOrderScreen(app: MainActivity) : Screen(app) {
             }
             if (o.status != "completed") { space(b, 6); b.addView(text("⟳  Updates automatically every ${AppConfig.ORDER_POLL_MS / 1000} seconds", 12f, Palette.muted).apply { setPadding(dp(34), 0, 0, 0) }) }
         }
-        space(b, 18)
+        space(b, 20)
         b.addView(row().apply {
-            background = bg(Color.WHITE, 12, Palette.line); setPadding(dp(16), dp(14), dp(16), dp(14)); setOnClickListener { navigate(Route.ORDER_DETAILS) }
+            background = bg(Color.WHITE, 12, Color.rgb(236, 236, 236)); setPadding(dp(16), dp(14), dp(16), dp(14)); setOnClickListener { navigate(Route.ORDER_DETAILS) }
             addView(column().apply {
-                addView(text("${countLabel(o.itemCount)}  •  ${o.paymentMethodLabel}", 14f, Palette.ink, true)); space(this, 2)
+                addView(text("${countLabel(o.itemCount)} · ${o.paymentMethodLabel}", 14f, INK, true)); space(this, 2)
                 addView(text("View order details", 12f, Palette.green, true))
             }, LinearLayout.LayoutParams(0, -2, 1f))
-            addView(text(money(o.total), 16f, Palette.ink, true))
+            addView(text(money(o.total), 16f, INK, true))
         })
 
         val bottom = column().apply { setPadding(dp(24), dp(12), dp(24), dp(20)) }
@@ -89,5 +92,9 @@ class TrackOrderScreen(app: MainActivity) : Screen(app) {
             }) else bottom.addView(text("Cancel Order", 16f, Palette.muted, true).apply { gravity = Gravity.CENTER; background = bg(Color.rgb(236, 236, 236)); minHeight = dp(52) })
         } else bottom.addView(button("Order Again") { history.clear(); show(Route.HOME) })
         root.addView(bottom)
+    }
+
+    private companion object {
+        val INK = Color.rgb(36, 36, 36) // the tracking designs' #242424
     }
 }

@@ -202,6 +202,29 @@ class OrderDashboardTests(OrderTestCase):
         orders = list(self.client.get(reverse("dashboard:order-list")).context["orders"])
         self.assertEqual(orders[:2], [second, first])
 
+    def test_sidebar_counts_pending_orders(self):
+        self.place(client=self.client_user)
+        old = self.place()
+        Order.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=3))
+        advance_order(self.place(), Order.Status.PENDING)  # accepted: no longer counted
+
+        for url in (reverse("dashboard:order-list"), reverse("dashboard:pos")):
+            response = self.client.get(url)
+            self.assertEqual(response.context["pending_order_count"], 2)
+            self.assertRegex(response.content.decode(), r'id="pending-count"[^>]*>2</span>')
+
+    def test_sidebar_count_hidden_without_pending_orders(self):
+        response = self.client.get(reverse("dashboard:order-list"))
+        self.assertEqual(response.context["pending_order_count"], 0)
+        self.assertRegex(response.content.decode(), r'id="pending-count"[^>]*\bhidden>0</span>')
+
+    def test_pending_count_endpoint(self):
+        self.place()
+        url = reverse("dashboard:order-pending-count")
+        self.assertEqual(self.client.get(url).json(), {"pending": 1})
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 302)
+
     def test_partial_refresh_returns_table_only(self):
         self.place()
         response = self.client.get(reverse("dashboard:order-list"), {"partial": "1"})
@@ -239,6 +262,42 @@ class OrderDashboardTests(OrderTestCase):
         self.client.post(reverse("dashboard:order-confirm-payment", args=[order.pk]))
         order.refresh_from_db()
         self.assertEqual(order.payment_status, Order.PaymentStatus.PAID)
+
+    def test_detail_previews_payment_screenshot(self):
+        PaymentSettings.objects.create(qr_enabled=True, qr_image=png_upload(), account_name="Muyseang Ung")
+        order = self.place(payment_method=Order.PaymentMethod.MANUAL_QR)
+        order.payment_proof = png_upload("proof.png")
+        order.save()
+        page = self.client.get(reverse("dashboard:order-detail", args=[order.pk])).content.decode()
+        # Shown in the thumbnail and in the full-size preview, not just linked.
+        self.assertEqual(page.count(f'<img class="proof-image" src="{order.payment_proof.url}"'), 1)
+        self.assertIn('id="proof-modal"', page)
+        self.assertIn(f'<img src="{order.payment_proof.url}"', page)
+
+    def test_qr_order_is_accepted_only_after_payment_is_confirmed(self):
+        # Design A3: Accept Order stays disabled until the QR payment is confirmed.
+        PaymentSettings.objects.create(qr_enabled=True, qr_image=png_upload(), account_name="Muyseang Ung")
+        order = self.place(payment_method=Order.PaymentMethod.MANUAL_QR)
+        url = reverse("dashboard:order-detail", args=[order.pk])
+
+        page = self.client.get(url).content.decode()
+        self.assertRegex(page, r'<button type="submit" class="btn btn-primary"\s+disabled[^>]*>Accept Order</button>')
+        self.assertIn("Accept Order stays disabled until payment is confirmed.", page)
+
+        with self.assertRaisesMessage(OrderError, "Confirm the QR payment before accepting this order."):
+            advance_order(order, Order.Status.PENDING)
+        response = self.client.post(reverse("dashboard:order-advance", args=[order.pk]), {"from": "pending"}, follow=True)
+        self.assertContains(response, "Confirm the QR payment before accepting this order.")
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)
+
+        self.client.post(reverse("dashboard:order-confirm-payment", args=[order.pk]))
+        page = self.client.get(url).content.decode()
+        self.assertRegex(page, r'<button type="submit" class="btn btn-primary"\s*>Accept Order</button>')
+        self.assertNotIn("Accept Order stays disabled", page)
+        self.client.post(reverse("dashboard:order-advance", args=[order.pk]), {"from": "pending"})
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.ACCEPTED)
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)

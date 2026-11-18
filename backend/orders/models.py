@@ -76,6 +76,15 @@ class Order(models.Model):
         return self.status in self.FINAL_STATUSES
 
     @property
+    def needs_payment_to_accept(self):
+        """A Pending QR order can't be accepted until staff confirm its payment (design A3)."""
+        return (
+            self.status == self.Status.PENDING
+            and self.payment_method == self.PaymentMethod.MANUAL_QR
+            and self.payment_status != self.PaymentStatus.PAID
+        )
+
+    @property
     def can_confirm_payment(self):
         return (
             self.payment_method == self.PaymentMethod.MANUAL_QR
