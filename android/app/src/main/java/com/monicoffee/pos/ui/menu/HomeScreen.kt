@@ -1,6 +1,5 @@
 package com.monicoffee.pos.ui.menu
 
-import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
@@ -38,11 +37,7 @@ class HomeScreen(app: MainActivity) : MenuScreen(app) {
         val searchBox = row().apply { background = bg(Color.rgb(42, 42, 42), 8); setPadding(dp(16), 0, 0, 0) }
         searchBox.addView(vector(R.drawable.ic_search), LinearLayout.LayoutParams(dp(20), dp(20)))
         searchBox.addView(search, LinearLayout.LayoutParams(0, dp(48), 1f))
-        searchRow.addView(searchBox, LinearLayout.LayoutParams(0, dp(48), 1f).apply { rightMargin = dp(16) })
-        searchRow.addView(vector(R.drawable.ic_filter).apply {
-            contentDescription = "Filter"; background = bg(Palette.green, 8)
-            setOnClickListener { AlertDialog.Builder(context).setTitle("Category").setItems(names.toTypedArray()) { _, i -> pick(names[i]) }.show() }
-        }, LinearLayout.LayoutParams(dp(52), dp(48))); h.addView(searchRow); root.addView(h)
+        searchRow.addView(searchBox, LinearLayout.LayoutParams(0, dp(48), 1f)); h.addView(searchRow); root.addView(h)
         val b = content(); space(b, 12)
         val current = menu.categories.firstOrNull { it.id == menu.categoryId }?.name ?: "All"
         chips(b, names, false, { it == current }, pick); space(b, 16)
